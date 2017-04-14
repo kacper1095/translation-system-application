@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset="utf-8">
+  <title>Sign language translator</title>
+  <script src="./bower_components/jquery/dist/jquery.js"></script>
+  <link rel="stylesheet" href="./bower_components/bootstrap/dist/css/bootstrap.css">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <div class="app">
+    <div class="window-info">
+      <p>
+        Exit
+      </p>
+    </div>
+    <span class="glyphicon glyphicon-alert warning"></span>
+    <div class="warning-message">
+      <p>
+        Are you sure about that?
+      </p>
+    </div>
+    <div class="btn-exit-container">
+      <button class='btn btn-primary btn-md btn-exit' id='btn-leave'>Yes</button>
+      <button class='btn btn-default btn-md btn-exit' id='btn-stay'>No</button>
+    </div>
+  </div>
+
+
+
+  <script>require('./exit.js')</script>
+</body>
+</html>

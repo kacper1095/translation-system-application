@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset="utf-8">
+  <title>Sign language translator</title>
+  <script src="./bower_components/jquery/dist/jquery.js"></script>
+  <link rel="stylesheet" href="./bower_components/bootstrap/dist/css/bootstrap.css">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <div class="app">
+    <div class="title-text-container">
+      <h1><u>Sign Language Translate System</u></h1>
+    </div>
+    <div class="help-container">
+      <button type="button" class="exit_btn" id="btn-help">
+        <i class="glyphicon glyphicon-question-sign"></i>
+      </button>
+      <p>
+        Help
+      </p>
+    </div>
+    <div class="enter-container">
+      <div class="btn-begin-conv-container">
+        <button type="button" class="btn-begin-conv">
+          <i class="glyphicon glyphicon-user"></i>
+        </button>
+      </div>
+      <p>
+        Click button to begin conversation!
+      </p>
+    </div>
+    <div class="exit-container">
+      <button type="button" class="exit_btn" id='btn-logout'>
+        <i class="glyphicon glyphicon-log-out"></i>
+      </button>
+      <p>
+        Exit
+      </p>
+    </div>
+      <div class="radiant-circle-inner">
+      </div>
+      <div class="radiant-circle-outer">
+      </div>
+  </div>
+
+
+
+  <script>require('./index.js')</script>
+</body>
+</html>
