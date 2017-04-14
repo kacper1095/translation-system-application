@@ -24,7 +24,7 @@ p, h1, h2, h3, h4 {
   width: 100% !important;
   background: rgb(200, 200, 200); /* For browsers that do not support gradients */
   background: -webkit-radial-gradient(circle, rgb(200, 200, 200), rgb(201, 201, 201));
-  animation: fadein 0.5s;
+  animation: fadein 0.2s;
 }
 
 .title-text-container {
@@ -41,6 +41,15 @@ p, h1, h2, h3, h4 {
   position: fixed;
   bottom: 10%;
   right: 10%;
+  text-align: center;
+  font-weight: bolder;
+  color: #261758;
+}
+
+.exit-converstion-container {
+  position: fixed;
+  top: 10%;
+  left: 10%;
   text-align: center;
   font-weight: bolder;
   color: #261758;
@@ -219,6 +228,7 @@ p, h1, h2, h3, h4 {
   right: 5%;
 }
 
+
 .exit_btn:hover {
   transform: : scale(1.2);
   -ms-transform: scale(1.2);
@@ -267,4 +277,35 @@ p, h1, h2, h3, h4 {
   box-shadow: 0 0 30px 30px rgba(38, 23, 88, 0.1), 0 0 30px 30px rgba(38, 23, 88, 0.1) inset;
   z-index: -9999;
   animation: scale-circles 5s linear infinite;
+}
+
+
+.translation-section {
+  position: fixed;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  bottom: 0%;
+  height: 25%;
+  border-top: 2px solid rgba(178, 178, 178, 1);
+  overflow: hidden;
+}
+
+#translation {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: white;
+  padding: 3% 5% 3% 5%;
+  font-size: x-large;
+  overflow: hidden;
+}
+
+video {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  display: block;
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+  -moz-transform: rotateY(180deg);
 }

@@ -9,25 +9,27 @@
 </head>
 <body>
   <div class="app">
-    <div class="window-info">
+    <video id="camera" autoplay>
+    </video>
+
+    <div class="exit-converstion-container">
+      <button type="button" class="exit_btn" id='btn-logout'>
+        <i class="glyphicon glyphicon-log-out"></i>
+      </button>
       <p>
         Exit
       </p>
     </div>
-    <span class="glyphicon glyphicon-alert warning"></span>
-    <div class="warning-message">
-      <p>
-        Are you sure about that?
+    <div class="translation-section" id="translation-section">
+      <p id="translation">
+
       </p>
     </div>
-    <div class="btn-exit-container">
-      <button class='btn btn-primary btn-md btn-exit' id='btn-leave'>Yes</button>
-      <button class='btn btn-default btn-md btn-exit' id='btn-stay'>No</button>
-    </div>
+    <canvas style="display: none;"></canvas>
   </div>
 
 
 
-  <script>require('./js/exit.js')</script>
+  <script>require('./js/conversation.js')</script>
 </body>
 </html>

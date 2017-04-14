@@ -10,6 +10,8 @@ let mainWindow = null
 let askForExitWindow = null
 let helpWindow = null
 let conversationWindow = null
+let supby = null
+let apiUrl = 'http://localhost:5000'
 
 function createHelpWindow() {
   if (helpWindow === null) {
@@ -35,7 +37,23 @@ function createHelpWindow() {
 }
 
 function createConversationWindow() {
+  conversationWindow = new BrowserWindow({
+    backgroundColor: '#000000'
+  })
+  conversationWindow.setMenu(null)
+  conversationWindow.setFullScreen(true)
 
+  conversationWindow.loadURL(url.format({
+    pathname: path.join(__dirname, 'conversation.html'),
+    protocol: 'file:',
+    slashes: true
+  }))
+
+  conversationWindow.on('closed', () => {
+    conversationWindow = null
+  })
+
+  conversationWindow.webContents.openDevTools()
 }
 
 function createExitWindow() {
@@ -82,7 +100,22 @@ function createWindow () {
 }
 
 app.on('ready', () => {
-  createWindow()
+  subpy = require('child_process').spawn('python', [__dirname + '/api/main.py'])
+  var startUp = function() {
+    require('request-promise')(apiUrl).then(function() {
+      createWindow();
+    }).catch(function(err) {
+      startUp();
+    })
+  }
+  startUp();
+  // createWindow();
+})
+
+app.on('quit', () => {
+  if (subpy !== null) {
+    subpy.kill('SIGINT')
+  }
 })
 
 ipcMain.on('ask-for-exit', (event, args) => {
@@ -90,8 +123,6 @@ ipcMain.on('ask-for-exit', (event, args) => {
 })
 
 ipcMain.on('exit', (event, args) => {
-  askForExitWindow.hide()
-  mainWindow.hide()
   app.quit()
 })
 
@@ -109,4 +140,9 @@ ipcMain.on('ask-for-help-leave', (event, args) => {
   helpWindow.hide()
   helpWindow.close()
   helpWindow = null
+})
+
+ipcMain.on('begin-conversation', (event, args) => {
+  createConversationWindow()
+  mainWindow.close()
 })
