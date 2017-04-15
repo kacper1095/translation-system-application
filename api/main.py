@@ -1,26 +1,12 @@
 from flask import Flask
 from flask_restful import Resource, Api, request
-from flask_cors import CORS, cross_origin
-from PIL import Image
-from binascii import a2b_base64
+from flask_cors import CORS
+from pipeline import evaluate
 import json
-import io
-import cv2
-import re
-import numpy as np
 
 app = Flask(__name__)
 CORS(app, origins='http://localhost:8000')
 api = Api(app)
-
-
-def load_img(img_str):
-    image_data = re.sub('^data:image/.+;base64,', '', img_str)
-    buffer = io.BytesIO()
-    buffer.write(a2b_base64(image_data))
-    img = Image.open(buffer)
-    img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
-    return img.shape
 
 
 @api.resource('/')
@@ -31,8 +17,8 @@ class Classifier(Resource):
     def post(self):
         img_array_json = request.form.get('img_array')
         img_array = json.loads(img_array_json)
-        return {'result': str(load_img(img_array[0])) + ' '}
+        return {'result': str(evaluate(img_array)[0].shape)}
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()

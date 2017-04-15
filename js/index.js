@@ -12,3 +12,8 @@ let beginConversation = document.getElementById('btn-begin-conversation')
 beginConversation.addEventListener('click', function(e) {
   ipcRenderer.send('begin-conversation')
 })
+
+let help = document.getElementById('btn-help')
+help.addEventListener('click', function(e) {
+  ipcRenderer.send('ask-for-help')
+})

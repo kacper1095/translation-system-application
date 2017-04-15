@@ -28,10 +28,9 @@ function isOverflowed(element) {
 }
 
 function scrollToBottom(scrollDuration, element) {
-  console.log(element.scrollHeight)
-    $(element).animate({
-      scrollTop: $(element).offset().top
-    }, scrollDuration);
+    $(element).stop().animate({
+      scrollTop: element.scrollHeight
+    }, scrollDuration, 'linear');
 }
 
 function classifyLetters(){
@@ -41,9 +40,7 @@ function classifyLetters(){
     data: {'img_array': JSON.stringify(cameraShots)},
     success: function(response) {
       textWindow.innerHTML = textWindow.innerHTML + response.result;
-      if(isOverflowed(textWindow)) {
-        scrollToBottom(10000, textWindow);
-      }
+      scrollToBottom(1000, textWindow);
     },
     error: function(msg) {
       console.log(msg)
@@ -62,4 +59,4 @@ function snapshot() {
   }
 }
 
-setInterval(snapshot, 50) // 5 frames per second
+setInterval(snapshot, 200) // 5 frames per second

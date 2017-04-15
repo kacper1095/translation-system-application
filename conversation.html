@@ -8,12 +8,12 @@
   <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
-  <div class="app">
+  <div class="app dark-background">
     <video id="camera" autoplay>
     </video>
 
-    <div class="exit-converstion-container">
-      <button type="button" class="exit_btn" id='btn-logout'>
+    <div class="exit-converstion-container light-container">
+      <button type="button" class="exit_btn light-btn" id='btn-logout'>
         <i class="glyphicon glyphicon-log-out"></i>
       </button>
       <p>
@@ -21,9 +21,11 @@
       </p>
     </div>
     <div class="translation-section" id="translation-section">
-      <p id="translation">
+      <div class="translation-subsection">
+        <p id="translation">
 
-      </p>
+        </p>
+      </div>
     </div>
     <canvas style="display: none;"></canvas>
   </div>
