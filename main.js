@@ -127,9 +127,16 @@ ipcMain.on('exit', (event, args) => {
 })
 
 ipcMain.on('stay', (event, args) => {
-  askForExitWindow.hide()
-  askForExitWindow.close()
-  askForExitWindow = null
+  if (askForExitWindow !== null) {
+    askForExitWindow.hide()
+    askForExitWindow.close()
+    askForExitWindow = null
+  }
+  if (helpWindow !== null) {
+    helpWindow.hide()
+    helpWindow.close()
+    helpWindow = null
+  }
 })
 
 ipcMain.on('ask-for-help', (event, args) => {
