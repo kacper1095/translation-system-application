@@ -1,6 +1,7 @@
 from PIL import Image
 from binascii import a2b_base64
-from src.utils.Transformers.basic_morpho_transforms import Resize
+from src.utils.Transformers.CNN_utils.transforms import HandsLocalizer, GestureClassifier, CharPredictor, PredictionSelector
+from src.utils.Transformers.basic_morpho_transforms import Resizer
 from src.utils.Transformers.eval_transformer_pipeline import eval_transformer_pipeline as eval
 from src.utils.Transformers.eval_transformer_pipeline import eval_transformer_pipeline_store_all as eval_with_every_stage
 import io
@@ -11,7 +12,11 @@ import numpy as np
 
 def get_transformers():
     transformers = [
-        Resize(width=320, height=240)
+        Resizer(width=320, height=240),
+        HandsLocalizer(),
+        GestureClassifier(),
+        CharPredictor(num_of_chars=1),
+        PredictionSelector(indices_of_transformers_to_combine=[2, 3])
     ]
 
     return transformers

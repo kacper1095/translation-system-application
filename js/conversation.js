@@ -18,8 +18,25 @@ let canvasMaskedWindow = document.getElementById('masked-window')
 let ctxMasked = canvasMasked.getContext('2d');
 
 
-let maskHeight = 240;
-let maskWidth = 320;
+let canvasCharPrediction = document.getElementById('char-prediction-window-canvas')
+let canvasCharPredictionWindow = document.getElementById('char-prediction-window')
+let ctxCharPrediction = canvasCharPrediction.getContext('2d');
+
+
+let canvasGestureClassification = document.getElementById('gesture-classification-window-canvas')
+let canvasGestureClassificationWindow = document.getElementById('gesture-classification-window')
+let ctxGestureClassification = canvasGestureClassification.getContext('2d');
+
+
+let canvasFinalPrediction = document.getElementById('final-prediction-window-canvas')
+let canvasFinalPredictionWindow = document.getElementById('final-prediction-window')
+let ctxFinalPrediction = canvasFinalPrediction.getContext('2d');
+
+
+let maskHeight = 240
+let maskWidth = 320
+
+const DEBUG = true
 
 let videoConstraints = {
   video: {
@@ -75,12 +92,21 @@ function classifyLetters(){
 
 function processResponse(response) {
   textWindow.innerHTML = textWindow.innerHTML + response.result;
+  if (DEBUG) {
+    assignImgToContext(ctxMasked, response.resized)
+    assignImgToContext(ctxCharPrediction, response.predictedChars)
+    assignImgToContext(ctxGestureClassification, response.classifiedGestures)
+    assignImgToContext(ctxFinalPrediction, response.finallyPredicted)
+  }
+  scrollToBottom(1000, textWindow);
+}
+
+function assignImgToContext(context, responsePart) {
   var img = new Image
   img.onload = function() {
-    ctxMasked.drawImage(img, 0, 0, maskWidth, maskHeight)
+    context.drawImage(img, 0, 0, maskWidth, maskHeight)
   }
-  img.src = response.resized
-  scrollToBottom(1000, textWindow);
+  img.src = responsePart
 }
 
 function snapshot() {
@@ -90,7 +116,12 @@ function snapshot() {
   if (canvas.width != video.videoWidth) {
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
-    canvasMaskedWindow.style.border = "1px solid gray"
+    if (DEBUG) {
+      insertBorderToWindow(canvasMaskedWindow)
+      insertBorderToWindow(canvasGestureClassificationWindow)
+      insertBorderToWindow(canvasCharPredictionWindow)
+      insertBorderToWindow(canvasFinalPredictionWindow)
+    }
   }
   if (mediaStream) {
     if (cameraShots.length >= 5) {
@@ -102,8 +133,22 @@ function snapshot() {
   }
 }
 
-canvasMasked.width = maskWidth
-canvasMasked.height = maskHeight
-canvas.width = maskWidth
-canvas.height = maskHeight
+function insertBorderToWindow(canvasWindow) {
+  canvasWindow.style.border = "1px solid gray"
+}
+
+function init () {
+  resizeCanvas(canvasMasked, maskWidth, maskHeight)
+  resizeCanvas(canvas, maskWidth, maskHeight)
+  resizeCanvas(canvasCharPrediction, maskWidth, maskHeight)
+  resizeCanvas(canvasGestureClassification, maskWidth, maskHeight)
+  resizeCanvas(canvasFinalPredictionWindow, maskWidth, maskHeight)
+}
+
+function resizeCanvas(canvas, width, height) {
+  canvas.width = width
+  canvas.height = height
+}
+
+init()
 setInterval(snapshot, 200) // 5 frames per second

@@ -3,12 +3,12 @@ from .Transformer import Transformer
 import cv2
 
 
-class Resize(Transformer):
-    out_key = 'original_img'
-
+class Resizer(Transformer):
     def __init__(self, height=None, width=None):
+        super(Resizer, self).__init__()
         self.height = height
         self.width = width
+        self.out_key = 'resize'
 
     def transform(self, X, **transform_params):
         if type(X) == list:
@@ -16,8 +16,10 @@ class Resize(Transformer):
             for i, img in enumerate(X):
                 result.append(cv2.resize(X[i], (self.width, self.height)))
         elif len(X.shape) == 3:
-            return cv2.resize(X, (self.width, self.height))
+            self.output = cv2.resize(X, (self.width, self.height))
+            return self.output
         else:
             raise ValueError('Unknown shape of data')
-        return result
+        self.output = result
+        return self.output
 

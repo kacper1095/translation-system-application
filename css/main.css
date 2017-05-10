@@ -379,3 +379,45 @@ video {
   height: 100%;
   width: 100%;
 }
+
+#gesture-classification-window {
+  height: 240px;
+  width: 320px;
+  position: absolute;
+  right: 0;
+  top: 240px;
+  z-index: 999;
+}
+
+#gesture-classification-window-canvas {
+  height: 100%;
+  width: 100%;
+}
+
+#char-prediction-window {
+  height: 240px;
+  width: 320px;
+  position: absolute;
+  right: 0;
+  top: 480px;
+  z-index: 999;
+}
+
+#char-prediction-window-canvas {
+  height: 100%;
+  width: 100%;
+}
+
+#final-prediction-window {
+  height: 240px;
+  width: 320px;
+  position: absolute;
+  right: 0;
+  top: 720;
+  z-index: 999;
+}
+
+#final-prediction-window-canvas {
+  height: 100%;
+  width: 100%;
+}

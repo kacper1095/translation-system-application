@@ -1,23 +1,20 @@
 from sklearn.base import TransformerMixin
 
+import numpy as np
+
 
 class Transformer(TransformerMixin):
     required_keys = []
     out_key = None
-    draw = False
-    verbose = 0
 
-    def fit(self, X, y=None, **fit_params):
-        return self
+    def __init__(self):
+        self.output = None
 
     def score(self, X):
         return 0
 
     def transform(self, X, **transform_params):
         return X
-
-    def get_params(self, deep=True):
-        return dict()
 
     def get_name(self):
         return self.__class__.__name__
