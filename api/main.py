@@ -6,6 +6,8 @@ import json
 import cv2
 import base64
 import urllib
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from io import BytesIO
 
@@ -20,11 +22,11 @@ class Classifier(Resource):
     @staticmethod
     def generate_plot(plot_results):
         fig = plt.figure()
+        x = range(0, plot_results.shape[0])
+        plt.plot(x, plot_results)
         figfile = BytesIO()
         plt.savefig(figfile, format='png')
         figfile.seek(0)
-        x = range(0, plot_results.shape[0])
-        plt.plot(x, plot_results)
         figdata_png = base64.b64encode(figfile.getvalue())
         bytes = 'data:image/png;base64,{}'.format(urllib.quote(figdata_png))
         plt.close(fig)
