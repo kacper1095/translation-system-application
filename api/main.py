@@ -30,6 +30,7 @@ class Classifier(Resource):
         figdata_png = base64.b64encode(figfile.getvalue())
         bytes = 'data:image/png;base64,{}'.format(urllib.quote(figdata_png))
         plt.close(fig)
+        del fig
         return bytes
 
     @staticmethod

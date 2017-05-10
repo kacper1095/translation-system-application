@@ -40,7 +40,7 @@ def load_img(img_str):
     buffer.write(a2b_base64(image_data))
     img = Image.open(buffer)
     img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
-    cv2.imwrite('img.png', img)
+    del buffer
     return img
 
 
