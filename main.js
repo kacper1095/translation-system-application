@@ -100,16 +100,16 @@ function createWindow () {
 }
 
 app.on('ready', () => {
-  subpy = require('child_process').spawn('python', [__dirname + '/api/main.py'])
-  var startUp = function() {
-    require('request-promise')(apiUrl).then(function() {
-      createWindow();
-    }).catch(function(err) {
-      startUp();
-    })
-  }
-  startUp();
-  // createWindow();
+  // subpy = require('child_process').spawn('python', [__dirname + '/api/main.py'])
+  // var startUp = function() {
+  //   require('request-promise')(apiUrl).then(function() {
+  //     createWindow();
+  //   }).catch(function(err) {
+  //     startUp();
+  //   })
+  // }
+  // startUp();
+  createWindow();
 })
 
 app.on('quit', () => {

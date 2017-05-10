@@ -1,7 +1,7 @@
 import string
 
 AVAILABLE_CHARS = string.ascii_lowercase + string.digits + ' '
-DEST_SHAPE = (768, 1024)
+DEST_SHAPE = (240, 320)
 VIDEO_EXTENSION = ".mp4"
 FRAME_RATE = 23.976
 

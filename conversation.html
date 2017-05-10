@@ -11,7 +11,10 @@
   <div class="app dark-background">
     <video id="camera" autoplay>
     </video>
-
+    <div id="masked-window">
+      <canvas id="masked-window-canvas">
+      </canvas>
+    </div>
     <div class="exit-converstion-container light-container">
       <button type="button" class="exit_btn light-btn" id='btn-logout'>
         <i class="glyphicon glyphicon-log-out"></i>
@@ -27,7 +30,7 @@
         </p>
       </div>
     </div>
-    <canvas style="display: none;"></canvas>
+    <canvas id="video-stream-canvas" style="display: none;"></canvas>
   </div>
 
 
