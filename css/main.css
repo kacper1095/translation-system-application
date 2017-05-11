@@ -366,57 +366,98 @@ video {
   -moz-transform: rotateY(180deg);
 }
 
-#masked-window {
-  height: 240px;
-  width: 320px;
-  position: absolute;
-  right: 0;
-  top: 0;
-  z-index: 999;
+
+
+
+
+@media screen and (min-height: 960px) {
+  #masked-window {
+    height: 240px;
+    width: 320px;
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: 999;
+  }
+  #gesture-classification-window {
+    height: 240px;
+    width: 320px;
+    position: absolute;
+    right: 0;
+    top: 240px;
+    z-index: 999;
+  }
+
+  #char-prediction-window {
+    height: 240px;
+    width: 320px;
+    position: absolute;
+    right: 0;
+    top: 480px;
+    z-index: 999;
+  }
+
+  #final-prediction-window {
+    height: 240px;
+    width: 320px;
+    position: absolute;
+    right: 0;
+    top: 720px;
+    z-index: 999;
+  }
 }
+
+@media screen and (max-height: 959px) {
+  #masked-window {
+    height: 240px;
+    width: 320px;
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: 999;
+  }
+  #gesture-classification-window {
+    height: 240px;
+    width: 320px;
+    position: absolute;
+    right: 0;
+    top: 240px;
+    z-index: 999;
+  }
+
+  #char-prediction-window {
+    height: 240px;
+    width: 320px;
+    position: absolute;
+    left: 0;
+    top: 0px;
+    z-index: 999;
+  }
+
+  #final-prediction-window {
+    height: 240px;
+    width: 320px;
+    position: absolute;
+    left: 0;
+    top: 240px;
+    z-index: 999;
+  }
+}
+
 
 #masked-window-canvas {
   height: 100%;
   width: 100%;
 }
-
-#gesture-classification-window {
-  height: 240px;
-  width: 320px;
-  position: absolute;
-  right: 0;
-  top: 240px;
-  z-index: 999;
-}
-
 #gesture-classification-window-canvas {
   height: 100%;
   width: 100%;
-}
-
-#char-prediction-window {
-  height: 240px;
-  width: 320px;
-  position: absolute;
-  right: 0;
-  top: 480px;
-  z-index: 999;
 }
 
 #char-prediction-window-canvas {
   height: 100%;
   width: 100%;
 }
-
-#final-prediction-window {
-  height: 240px;
-  width: 320px;
-  position: absolute;
-  right: 0;
-  top: 720;
-  z-index: 999;
-}
-
 #final-prediction-window-canvas {
   height: 100%;
   width: 100%;

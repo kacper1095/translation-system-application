@@ -20,10 +20,11 @@ api = Api(app)
 class Classifier(Resource):
 
     @staticmethod
-    def generate_plot(plot_results):
+    def generate_plot(plot_results, title):
         fig = plt.figure()
         x = range(0, plot_results.shape[0])
         plt.plot(x, plot_results)
+        plt.title(title)
         figfile = BytesIO()
         plt.savefig(figfile, format='png')
         figfile.seek(0)
@@ -48,9 +49,9 @@ class Classifier(Resource):
         img_array = json.loads(img_array_json)
         evaluated = evaluate(img_array)
         return {'result': str(evaluated['init'][-1].shape)+ '\n', 'resized': Classifier.convert_img(evaluated['hands'][-1]),
-                'predictedChars': Classifier.generate_plot(evaluated['chars']),
-                'classifiedGestures': Classifier.generate_plot(evaluated['gesture']),
-                'finallyPredicted': Classifier.generate_plot(evaluated['prediction_selection'])}
+                'predictedChars': Classifier.generate_plot(evaluated['chars'], 'chars'),
+                'classifiedGestures': Classifier.generate_plot(evaluated['gesture'], 'gesture'),
+                'finallyPredicted': Classifier.generate_plot(evaluated['prediction_selection'], 'selection')}
 
 
 if __name__ == '__main__':

@@ -5,9 +5,6 @@ let logout = document.getElementById('btn-logout')
 let textWindow = document.getElementById('translation')
 let canvas = document.getElementById('video-stream-canvas')
 
-canvas.width = 320;
-canvas.height = 240;
-
 let ctx = canvas.getContext('2d');
 let mediaStream = null;
 let video = document.getElementById('camera')
@@ -33,8 +30,8 @@ let canvasFinalPredictionWindow = document.getElementById('final-prediction-wind
 let ctxFinalPrediction = canvasFinalPrediction.getContext('2d');
 
 
-let maskHeight = 240
-let maskWidth = 320
+let maskHeight = canvasMaskedWindow.offsetHeight
+let maskWidth = canvasMaskedWindow.offsetWidth
 
 const DEBUG = true
 
@@ -142,7 +139,7 @@ function init () {
   resizeCanvas(canvas, maskWidth, maskHeight)
   resizeCanvas(canvasCharPrediction, maskWidth, maskHeight)
   resizeCanvas(canvasGestureClassification, maskWidth, maskHeight)
-  resizeCanvas(canvasFinalPredictionWindow, maskWidth, maskHeight)
+  resizeCanvas(canvasFinalPrediction, maskWidth, maskHeight)
 }
 
 function resizeCanvas(canvas, width, height) {
