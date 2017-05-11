@@ -33,7 +33,7 @@ let ctxFinalPrediction = canvasFinalPrediction.getContext('2d');
 let maskHeight = canvasMaskedWindow.offsetHeight
 let maskWidth = canvasMaskedWindow.offsetWidth
 
-const DEBUG = true
+const DEBUG = false
 
 let videoConstraints = {
   video: {
@@ -77,7 +77,7 @@ function classifyLetters(){
   $.ajax({
     type: "POST",
     url: "http://localhost:5000/",
-    data: {'img_array': JSON.stringify(cameraShots)},
+    data: {'img_array': JSON.stringify(cameraShots), 'debug': DEBUG},
     success: function(response) {
       processResponse(response)
     },

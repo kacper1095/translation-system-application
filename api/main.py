@@ -18,7 +18,6 @@ api = Api(app)
 
 @api.resource('/')
 class Classifier(Resource):
-
     @staticmethod
     def generate_plot(plot_results, title):
         fig = plt.figure()
@@ -36,7 +35,7 @@ class Classifier(Resource):
 
     @staticmethod
     def convert_img(img):
-        img = cv2.flip(img,1)
+        img = cv2.flip(img, 1)
         to_png = cv2.imencode('.png', img)[1]
         bytes = 'data:image/png;base64,{}'.format(urllib.quote(base64.encodestring(to_png).rstrip('\n')))
         return bytes
@@ -46,12 +45,17 @@ class Classifier(Resource):
 
     def post(self):
         img_array_json = request.form.get('img_array')
+        debug = bool(request.form.get('debug'))
         img_array = json.loads(img_array_json)
         evaluated = evaluate(img_array)
-        return {'result': str(evaluated['init'][-1].shape)+ '\n', 'resized': Classifier.convert_img(evaluated['hands'][-1]),
-                'predictedChars': Classifier.generate_plot(evaluated['chars'], 'chars'),
-                'classifiedGestures': Classifier.generate_plot(evaluated['gesture'], 'gesture'),
-                'finallyPredicted': Classifier.generate_plot(evaluated['prediction_selection'], 'selection')}
+        if debug:
+            return {'result': str(evaluated['init'][-1].shape) + '\n',
+                    'resized': Classifier.convert_img(evaluated['hands'][-1]),
+                    'predictedChars': Classifier.generate_plot(evaluated['chars'], 'chars'),
+                    'classifiedGestures': Classifier.generate_plot(evaluated['gesture'], 'gesture'),
+                    'finallyPredicted': Classifier.generate_plot(evaluated['prediction_selection'], 'selection')}
+        else:
+            return {'result': str(evaluated['init'][-1].shape)}
 
 
 if __name__ == '__main__':
