@@ -33,7 +33,7 @@ let ctxFinalPrediction = canvasFinalPrediction.getContext('2d');
 let maskHeight = canvasMaskedWindow.offsetHeight
 let maskWidth = canvasMaskedWindow.offsetWidth
 
-const DEBUG = false
+const DEBUG = true
 
 let videoConstraints = {
   video: {
