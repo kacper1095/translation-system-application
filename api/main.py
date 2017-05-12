@@ -1,13 +1,14 @@
+import os
+os.environ['THEANO_FLAGS'] = ''
+
 from flask import Flask
 from flask_restful import Resource, Api, request
 from flask_cors import CORS
-from pipeline import evaluate
+from pipeline import evaluate, load_transformers
 import json
 import cv2
 import base64
 import urllib
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from io import BytesIO
 
@@ -50,7 +51,7 @@ class Classifier(Resource):
         evaluated = evaluate(img_array)
         if debug:
             return {'result': str(evaluated['init'][-1].shape) + '\n',
-                    'resized': Classifier.convert_img(evaluated['hands'][-1]),
+                    'resized': Classifier.convert_img(evaluated['hands'][-1][0]),
                     'predictedChars': Classifier.generate_plot(evaluated['chars'], 'chars'),
                     'classifiedGestures': Classifier.generate_plot(evaluated['gesture'], 'gesture'),
                     'finallyPredicted': Classifier.generate_plot(evaluated['prediction_selection'], 'selection')}
@@ -59,4 +60,5 @@ class Classifier(Resource):
 
 
 if __name__ == '__main__':
+    load_transformers()
     app.run()

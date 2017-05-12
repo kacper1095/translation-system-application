@@ -111,8 +111,8 @@ function snapshot() {
     return;
   }
   if (canvas.width != video.videoWidth) {
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
+    canvas.width = maskWidth
+    canvas.height = maskHeight
     if (DEBUG) {
       insertBorderToWindow(canvasMaskedWindow)
       insertBorderToWindow(canvasGestureClassificationWindow)
@@ -125,7 +125,8 @@ function snapshot() {
       classifyLetters()
       cameraShots = new Array()
     }
-    ctx.drawImage(video, 0, 0);
+    ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight,
+                         0, 0, canvas.width, canvas.height);
     cameraShots.push(canvas.toDataURL('image/png'));
   }
 }

@@ -1,7 +1,11 @@
 from PIL import Image
 from binascii import a2b_base64
-from src.utils.Transformers.CNN_utils.transforms import HandsLocalizer, GestureClassifier, CharPredictor, PredictionSelector
-from src.utils.Transformers.basic_morpho_transforms import Resizer
+from src.utils.Transformers.CNN_utils.transforms import (
+    HandsLocalizer, GestureClassifier, CharPredictor, PredictionSelector, CNNTransformer
+)
+from src.utils.Transformers.basic_morpho_transforms import (
+    Resizer, BoxHands, Normalizer
+)
 from src.utils.Transformers.eval_transformer_pipeline import eval_transformer_pipeline as eval
 from src.utils.Transformers.eval_transformer_pipeline import eval_transformer_pipeline_store_all as eval_with_every_stage
 import io
@@ -9,27 +13,29 @@ import cv2
 import re
 import numpy as np
 
+transformers = None
 
-def get_transformers():
+
+def load_transformers():
+    global transformers
     transformers = [
         Resizer(width=320, height=240),
+        Normalizer(),
         HandsLocalizer(),
+        BoxHands(),
         GestureClassifier(),
-        CharPredictor(num_of_chars=1),
-        PredictionSelector(indices_of_transformers_to_combine=[2, 3])
+        CharPredictor(num_of_chars=5),
+        PredictionSelector(indices_of_transformers_to_combine=[4, 5])
     ]
-
-    return transformers
+    CNNTransformer.transformers = transformers
 
 
 def get_letter(video_sequence):
-    transformers = get_transformers()
     letter = eval(video_sequence, transformers)
     return letter
 
 
 def get_stages(video_sequence):
-    transformers = get_transformers()
     stages = eval_with_every_stage(video_sequence, transformers)
     return stages
 
@@ -48,7 +54,7 @@ def process_json_img_array(json_array):
     sequence = []
     for img_string in json_array:
         sequence.append(load_img(img_string))
-    return sequence
+    return np.asarray(sequence).astype('float32')
 
 
 def evaluate(json_array, stages=True):
