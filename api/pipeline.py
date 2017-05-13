@@ -19,13 +19,12 @@ transformers = None
 def load_transformers():
     global transformers
     transformers = [
-        Resizer(width=320, height=240),
         Normalizer(),
         HandsLocalizer(),
         BoxHands(),
         GestureClassifier(),
         CharPredictor(num_of_chars=5),
-        PredictionSelector(indices_of_transformers_to_combine=[4, 5])
+        PredictionSelector(indices_of_transformers_to_combine=[3, 4])
     ]
     CNNTransformer.transformers = transformers
 

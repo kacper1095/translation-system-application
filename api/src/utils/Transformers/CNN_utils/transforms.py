@@ -2,7 +2,7 @@ from __future__ import print_function
 
 from ..Transformer import Transformer
 from ...AsciiEncoder import AsciiEncoder
-from .mocks import GestureClassifierMock, CharPredictionMock, PredictionSelectionMock
+from .mocks import GestureClassifierMock, CharPredictionMock, PredictionSelectionMock, HandsLocalizerMock
 
 from keras.utils.np_utils import to_categorical
 from keras.models import model_from_json
@@ -35,6 +35,7 @@ class HandsLocalizer(CNNTransformer):
         prediction = self.model.predict(last_frame)
         output = X.copy().transpose(0, 3, 1, 2)
         output[-1] = prediction[0] * 255
+        # output[-1] = np.mean(last_frame, axis=1, keepdims=True)
         self.output = output
         return self.output
 

@@ -1,5 +1,5 @@
 import os
-os.environ['THEANO_FLAGS'] = ''
+os.environ['THEANO_FLAGS'] = 'floatX=float32,mode=FAST_RUN'
 
 from flask import Flask
 from flask_restful import Resource, Api, request
@@ -38,7 +38,7 @@ class Classifier(Resource):
     def convert_img(img):
         img = cv2.flip(img, 1)
         to_png = cv2.imencode('.png', img)[1]
-        bytes = 'data:image/png;base64,{}'.format(urllib.quote(base64.encodestring(to_png).rstrip('\n')))
+        bytes = 'data:image/png;base64,{}'.format(urllib.quote(base64.b64encode(to_png)))
         return bytes
 
     def get(self):
@@ -59,6 +59,5 @@ class Classifier(Resource):
             return {'result': str(evaluated['init'][-1].shape)}
 
 
-if __name__ == '__main__':
-    load_transformers()
-    app.run()
+load_transformers()
+app.run()

@@ -32,9 +32,9 @@ class Normalizer(Transformer):
         self.out_key = 'normalized'
 
     def transform(self, X, **transform_params):
-        X[:, 0, :, :] -= common.MEAN_VALUE_VGG[-1]
-        X[:, 1, :, :] -= common.MEAN_VALUE_VGG[-2]
-        X[:, 2, :, :] -= common.MEAN_VALUE_VGG[-3]
+        X[:, :, :, 0] -= common.MEAN_VALUE_VGG[0]
+        X[:, :, :, 1] -= common.MEAN_VALUE_VGG[1]
+        X[:, :, :, 2] -= common.MEAN_VALUE_VGG[2]
         return X
 
 

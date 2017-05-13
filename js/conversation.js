@@ -33,6 +33,8 @@ let ctxFinalPrediction = canvasFinalPrediction.getContext('2d');
 let maskHeight = canvasMaskedWindow.offsetHeight
 let maskWidth = canvasMaskedWindow.offsetWidth
 
+let predicted = true
+
 const DEBUG = true
 
 let videoConstraints = {
@@ -80,6 +82,7 @@ function classifyLetters(){
     data: {'img_array': JSON.stringify(cameraShots), 'debug': DEBUG},
     success: function(response) {
       processResponse(response)
+      predicted = true
     },
     error: function(msg) {
       console.log(msg)
@@ -121,13 +124,18 @@ function snapshot() {
     }
   }
   if (mediaStream) {
-    if (cameraShots.length >= 5) {
-      classifyLetters()
-      cameraShots = new Array()
+    if (predicted) {
+      if (cameraShots.length >= 5) {
+        predicted = false
+        classifyLetters()
+        cameraShots = []
+      }
     }
     ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight,
                          0, 0, canvas.width, canvas.height);
-    cameraShots.push(canvas.toDataURL('image/png'));
+    if (predicted) {
+      cameraShots.push(canvas.toDataURL('image/png'));
+    }
   }
 }
 
