@@ -79,7 +79,7 @@ function classifyLetters(){
   $.ajax({
     type: "POST",
     url: "http://localhost:5000/",
-    async: false,
+    // async: false,
     data: {'img_array': JSON.stringify(cameraShots), 'debug': DEBUG},
     success: function(response) {
       processResponse(response)
@@ -92,17 +92,20 @@ function classifyLetters(){
 }
 
 function processResponse(response) {
-  textWindow.innerHTML = textWindow.innerHTML + response.result;
+  if (response.result !== null) {
+    textWindow.innerHTML = textWindow.innerHTML + response.result;
+  }
   if (DEBUG) {
-    assignImgToContext(ctxMasked, response.resized)
-    assignImgToContext(ctxCharPrediction, response.predictedChars)
-    assignImgToContext(ctxGestureClassification, response.classifiedGestures)
-    assignImgToContext(ctxFinalPrediction, response.finallyPredicted)
+    assignImgIfNotNullToContext(ctxMasked, response.resized)
+    assignImgIfNotNullToContext(ctxCharPrediction, response.predictedChars)
+    assignImgIfNotNullToContext(ctxGestureClassification, response.classifiedGestures)
+    assignImgIfNotNullToContext(ctxFinalPrediction, response.finallyPredicted)
   }
   scrollToBottom(1000, textWindow);
 }
 
-function assignImgToContext(context, responsePart) {
+function assignImgIfNotNullToContext(context, responsePart) {
+  if (responsePart === null) return
   var img = new Image
   img.onload = function() {
     context.drawImage(img, 0, 0, maskWidth, maskHeight)
@@ -126,7 +129,7 @@ function snapshot() {
   }
   if (mediaStream) {
     if (predicted) {
-      if (cameraShots.length >= 5) {
+      if (cameraShots.length >= 1) {
         predicted = false
         classifyLetters()
         cameraShots = []
@@ -158,4 +161,4 @@ function resizeCanvas(canvas, width, height) {
 }
 
 init()
-setInterval(snapshot, 200) // 5 frames per second
+setInterval(snapshot, 1) // 5 frames per second
