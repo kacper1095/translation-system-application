@@ -4,10 +4,11 @@ from src.utils.Transformers.CNN_utils.transforms import (
     HandsLocalizer, GestureClassifier, CharPredictor, PredictionSelector, CNNTransformer
 )
 from src.utils.Transformers.basic_morpho_transforms import (
-    Resizer, BoxHands, Normalizer
+    Resizer, BoxHands, Normalizer, BGR2HSV
 )
 from src.utils.Transformers.eval_transformer_pipeline import eval_transformer_pipeline as eval
 from src.utils.Transformers.eval_transformer_pipeline import eval_transformer_pipeline_store_all as eval_with_every_stage
+from src.utils.AsciiEncoder import AsciiEncoder
 import io
 import cv2
 import re
@@ -19,12 +20,14 @@ transformers = None
 def load_transformers():
     global transformers
     transformers = [
+        Resizer(width=320),
         Normalizer(),
+        # BGR2HSV(),
         HandsLocalizer(),
         BoxHands(),
         GestureClassifier(),
-        CharPredictor(num_of_chars=5),
-        PredictionSelector(indices_of_transformers_to_combine=[3, 4])
+        CharPredictor(num_of_chars=20),
+        PredictionSelector(indices_of_transformers_to_combine=[4, 5])
     ]
     CNNTransformer.transformers = transformers
 
@@ -59,3 +62,8 @@ def process_json_img_array(json_array):
 def evaluate(json_array, stages=True):
     sequence = process_json_img_array(json_array)
     return get_letter(sequence) if not stages else get_stages(sequence)
+
+
+def convert_last_output_to_ascii(last_output):
+    index = np.argmax(last_output)
+    return AsciiEncoder.convert_indexes_to_characters(index)

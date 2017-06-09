@@ -4,17 +4,26 @@ os.environ['THEANO_FLAGS'] = 'floatX=float32,mode=FAST_RUN'
 from flask import Flask
 from flask_restful import Resource, Api, request
 from flask_cors import CORS
-from pipeline import evaluate, load_transformers
+from pipeline import evaluate, load_transformers, convert_last_output_to_ascii
+from src.utils.AsciiEncoder import AsciiEncoder
+from src.utils.Logger import Logger
 import json
 import cv2
+import os
 import base64
 import urllib
+import numpy as np
 import matplotlib.pyplot as plt
 from io import BytesIO
 
 app = Flask(__name__)
 CORS(app, origins='http://localhost:8000')
 api = Api(app)
+
+
+def clear_log():
+    if os.path.exists("log.txt"):
+        os.remove("log.txt")
 
 
 @api.resource('/')
@@ -49,9 +58,10 @@ class Classifier(Resource):
         debug = bool(request.form.get('debug'))
         img_array = json.loads(img_array_json)
         evaluated = evaluate(img_array)
+        ascii_output_from_last_layer = convert_last_output_to_ascii(evaluated['prediction_selection'][0])
         if debug:
-            return {'result': str(evaluated['init'][-1].shape) + '\n',
-                    'resized': Classifier.convert_img(evaluated['hands'][-1][0]),
+            return {'result': ascii_output_from_last_layer + '\n',
+                    'resized': Classifier.convert_img(evaluated['hands'][-1]),
                     'predictedChars': Classifier.generate_plot(evaluated['chars'], 'chars'),
                     'classifiedGestures': Classifier.generate_plot(evaluated['gesture'], 'gesture'),
                     'finallyPredicted': Classifier.generate_plot(evaluated['prediction_selection'], 'selection')}
@@ -59,5 +69,6 @@ class Classifier(Resource):
             return {'result': str(evaluated['init'][-1].shape)}
 
 
+clear_log()
 load_transformers()
 app.run()

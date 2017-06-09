@@ -11,9 +11,14 @@ SHOW_DEBUG_PRINT = False
 SHOW_DEBUG_IMAGES = False
 
 MODEL_FOLDER = 'models'
+
 HANDS_SEGMENTATION_FOLDER = os.path.join(MODEL_FOLDER, 'hand_segmentation')
+GESTURE_PREDICTION_FOLDER = os.path.join(MODEL_FOLDER, 'gesture_classification')
+PREDICTION_SELECTION_FOLDER = os.path.join(MODEL_FOLDER, 'prediction_selection')
+CHAR_PREDICTION_FOLDER = os.path.join(MODEL_FOLDER, 'char_prediction')
 
 ARCHITECTURE_JSON_NAME = 'architecture.json'
 WEIGHTS_H5_NAME = 'weights.h5'
+WEIGHTS_HDF5_NAME = 'weights.hdf5'
 
 MEAN_VALUE_VGG = np.array([103.939, 116.779, 123.68])

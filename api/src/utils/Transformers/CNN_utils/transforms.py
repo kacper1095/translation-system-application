@@ -6,11 +6,15 @@ from .mocks import GestureClassifierMock, CharPredictionMock, PredictionSelectio
 
 from keras.utils.np_utils import to_categorical
 from keras.models import model_from_json
-from src.common import HANDS_SEGMENTATION_FOLDER, ARCHITECTURE_JSON_NAME, WEIGHTS_H5_NAME
+from src.common import (
+    HANDS_SEGMENTATION_FOLDER, ARCHITECTURE_JSON_NAME, WEIGHTS_H5_NAME, CHAR_PREDICTION_FOLDER, WEIGHTS_HDF5_NAME
+    )
+from src.utils.Logger import Logger
 
 import sys
 import numpy as np
 import os
+import cv2
 
 
 class CNNTransformer(Transformer):
@@ -31,11 +35,17 @@ class HandsLocalizer(CNNTransformer):
         self.out_key = 'hands'
 
     def transform(self, X, **transform_params):
-        last_frame = np.asarray([X.transpose(0, 3, 1, 2)[0]])
+        Logger.log("shape: " + str(X.max()))
+        last_frame = np.asarray([X.transpose(0, 3, 1, 2)[-1]])
         prediction = self.model.predict(last_frame)
-        output = X.copy().transpose(0, 3, 1, 2)
-        output[-1] = prediction[0] * 255
-        # output[-1] = np.mean(last_frame, axis=1, keepdims=True)
+        prediction[prediction > 0.1] = 1.
+        Logger.log("output_shape: " + str(prediction.shape))
+        # output = X.transpose(0, 3, 1, 2)
+        output = X.copy() * 255.
+        prediction_colored = cv2.cvtColor((prediction[0][0] * 255), cv2.COLOR_GRAY2BGR)
+        cv2.imwrite('text.jpg', prediction_colored)
+        Logger.log("color shape: " + str(prediction_colored.max()))
+        output[-1] = prediction_colored
         self.output = output
         return self.output
 
@@ -44,6 +54,7 @@ class HandsLocalizer(CNNTransformer):
             model = model_from_json(f.read())
         model.load_weights(os.path.join(HANDS_SEGMENTATION_FOLDER, WEIGHTS_H5_NAME))
         return model
+        # return HandsLocalizerMock.model()
 
 
 class GestureClassifier(CNNTransformer):
@@ -62,7 +73,8 @@ class GestureClassifier(CNNTransformer):
 
 
 class CharPredictor(CNNTransformer):
-    __previous_predictions = []
+    __previous_predictions = to_categorical(np.random.randint(len(AsciiEncoder.AVAILABLE_CHARS), size=20),
+                                            len(AsciiEncoder.AVAILABLE_CHARS))
 
     def __init__(self, num_of_chars):
         super(CharPredictor, self).__init__()
@@ -71,12 +83,12 @@ class CharPredictor(CNNTransformer):
         self.out_key = 'chars'
 
     def transform(self, X, **transform_params):
-        x_data = self.prepare_data()
+        x_data = CharPredictor.__previous_predictions
         self.output = self.model.predict(np.asarray([x_data]))[0]
         return self.output
 
     def prepare_data(self):
-        predictions = CharPredictor.__previous_predictions
+        predictions = CharPredictor.__previous_predictions[:]
         if len(predictions) >= self.num_of_chars:
             while len(predictions) > self.num_of_chars:
                 predictions.pop(0)
@@ -87,12 +99,15 @@ class CharPredictor(CNNTransformer):
 
     @staticmethod
     def add_to_previous_predictions(prediction):
-        if prediction.shape != (1,):
-            prediction = np.argmax(prediction)
-        CharPredictor.__previous_predictions.append(prediction)
+        np.append(CharPredictor.__previous_predictions[1:],
+                  to_categorical(prediction, len(AsciiEncoder.AVAILABLE_CHARS)), axis=0)
 
     def load_model(self):
-        return CharPredictionMock.model(time_steps=self.num_of_chars, feature_length=len(AsciiEncoder.AVAILABLE_CHARS))
+        with open(os.path.join(CHAR_PREDICTION_FOLDER, ARCHITECTURE_JSON_NAME), 'r') as f:
+            model = model_from_json(f.read())
+        model.load_weights(os.path.join(CHAR_PREDICTION_FOLDER, WEIGHTS_HDF5_NAME))
+        return model
+        # return CharPredictionMock.model(time_steps=self.num_of_chars, feature_length=len(AsciiEncoder.AVAILABLE_CHARS))
 
 
 class PredictionSelector(CNNTransformer):
@@ -108,14 +123,14 @@ class PredictionSelector(CNNTransformer):
             previous_transformer_output.append(CNNTransformer.transformers[index].output)
         x_data = np.asarray([[previous_transformer_output]])
         prediction = self.model.predict(x_data)
-        CharPredictor.add_to_previous_predictions(prediction[0][0])
-        self.output = prediction[0][0]
+        predicted_arg = np.argmax(prediction[0])
+        CharPredictor.add_to_previous_predictions(predicted_arg)
+        self.output = prediction
         return self.output
 
     def fit_transform(self, X, y=None, **fit_params):
         previous_transformer_output = []
         for index in self.indices_of_transformers_to_combine:
-            print(CNNTransformer.transformers[index].output, file=sys.stderr)
             previous_transformer_output.append(CNNTransformer.transformers[index].output)
         x_data = np.asarray([[previous_transformer_output]])
         prediction = self.model.fit(x_data, y)

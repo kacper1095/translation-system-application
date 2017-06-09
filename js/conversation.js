@@ -79,6 +79,7 @@ function classifyLetters(){
   $.ajax({
     type: "POST",
     url: "http://localhost:5000/",
+    async: false,
     data: {'img_array': JSON.stringify(cameraShots), 'debug': DEBUG},
     success: function(response) {
       processResponse(response)
