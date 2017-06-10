@@ -162,7 +162,7 @@ class GestureClassifier(CNNTransformer):
 
         inp = np.array(self.cache)
         prediction = self.model.predict(inp.transpose((0, 3, 1, 2)))
-        self.output = prediction[0]
+        self.output = prediction[-1]
         self.clear_cache()
         return self.output
 

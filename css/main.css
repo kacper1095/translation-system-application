@@ -462,3 +462,43 @@ video {
   height: 100%;
   width: 100%;
 }
+
+
+
+.subtitle-window-container {
+  display: block;
+  margin-top: 5%;
+  margin-left: auto;
+  width: 100%;
+  font-weight: bolder;
+  font-size: 3em;
+  color: #261758;
+}
+
+.subtitle-window-container p {
+  text-align: center;
+}
+
+#faqs {
+  display: block;
+  width: 90%;
+  margin-left: 5%;
+  margin-right: 5%;
+  font-size: 1.2em;
+  color: #261758;
+}
+
+#faqs ul {
+  list-style: none;
+}
+
+#faqs img {
+  display: block;
+  width: 30%;
+  margin: 0 auto;
+  margin-top: 1em;
+}
+
+.question {
+  font-weight: bolder;
+}
