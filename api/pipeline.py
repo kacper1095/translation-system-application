@@ -23,7 +23,7 @@ transformers = None
 def load_transformers():
     global transformers
     transformers = [
-        Resizer(width=1080),
+        Resizer(width=480),
         # Normalizer(),
         # BGR2HSV(),
         # HandsLocalizer(),

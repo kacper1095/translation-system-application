@@ -11,7 +11,7 @@ class Coordinates(object):
         self.max_height = 0
 
     def add_coords_from_points(self, points):
-        offset = 80
+        offset = 40
         max_x = np.max(points[:, :, 0])
         min_x = np.min(points[:, :, 0])
         max_y = np.max(points[:, :, 1])
@@ -42,7 +42,7 @@ class Coordinates(object):
 
     def get_processed_cords(self):
         x, y, w, h = self.get_coords()
-        offset = 60
+        offset = 30
         x -= offset
         y -= offset
         w += 2 * offset

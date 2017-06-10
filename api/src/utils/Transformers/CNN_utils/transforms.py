@@ -8,7 +8,7 @@ from keras.utils.np_utils import to_categorical
 from keras.models import model_from_json
 from src.common import (
     HANDS_SEGMENTATION_FOLDER, ARCHITECTURE_JSON_NAME, WEIGHTS_H5_NAME, CHAR_PREDICTION_FOLDER, WEIGHTS_HDF5_NAME,
-    CLOSED_PALM_CASCADE, GEST_HAAR_CASCADE, OVERALL_PALM_CASCADE, CLASSIFIER_INPUT_SHAPE
+    CLOSED_PALM_CASCADE, GEST_HAAR_CASCADE, OVERALL_PALM_CASCADE, CLASSIFIER_INPUT_SHAPE, GESTURE_PREDICTION_FOLDER
 )
 from src.utils.Logger import Logger
 from .helpers import Coordinates
@@ -52,7 +52,7 @@ class HandsLocalizerTracker(CNNTransformer):
         self.tracker_init = False
         self.bbox = None
         self.counter = 0
-        self.min_size = (100, 100)  # forged opencv parameter
+        self.min_size = (50, 50)  # forged opencv parameter
         self.scale_factor = 1.1     # forged opencv parameter
         self.min_neighbors = 3      # forged opencv parameter
         self.tracker = None
@@ -60,7 +60,7 @@ class HandsLocalizerTracker(CNNTransformer):
     def transform(self, X, **transform_params):
         self.coordinates.max_height = X.shape[1]
         self.coordinates.max_width = X.shape[2]
-        offset = 20
+        offset = 0
         for frame in X.astype('uint8'):
             if not self.tracker_init or self.counter == 20:
                 self.counter = 0
@@ -104,7 +104,7 @@ class HandsLocalizerTracker(CNNTransformer):
             sliced = out[y:y+h, x:x+w]
             if HandsLocalizerTracker.is_shape_zero(sliced.shape):
                 sliced = out
-            scaled = cv2.resize(sliced, CLASSIFIER_INPUT_SHAPE)
+            scaled = cv2.resize(sliced, CLASSIFIER_INPUT_SHAPE, interpolation=cv2.INTER_LANCZOS4)
             transformed.append(scaled)
         self.output = np.asarray(transformed)
         return self.output
@@ -155,18 +155,23 @@ class GestureClassifier(CNNTransformer):
     def transform(self, X, **transform_params):
         if len(self.cache) < CNNTransformer.CACHE_MAX_SIZE:
             if self.frame_counter == CNNTransformer.MAX_FRAME_COUNTER:
-                self.cache.append(X[0])
+                self.cache.append(X[-1])
                 self.frame_counter = 0
             self.frame_counter += 1
             return None
+
         inp = np.array(self.cache)
-        prediction = self.model.predict(np.asarray([inp.transpose((1, 0, 2, 3))]))
+        prediction = self.model.predict(inp.transpose((0, 3, 1, 2)))
         self.output = prediction[0]
         self.clear_cache()
         return self.output
 
     def load_model(self):
-        return GestureClassifierMock.model()
+        with open(os.path.join(GESTURE_PREDICTION_FOLDER, ARCHITECTURE_JSON_NAME)) as f:
+            model = model_from_json(f.read())
+        model.load_weights(os.path.join(GESTURE_PREDICTION_FOLDER, WEIGHTS_H5_NAME))
+        return model
+        # return GestureClassifierMock.model()
 
 
 class CharPredictor(CNNTransformer):
@@ -234,7 +239,7 @@ class PredictionSelector(CNNTransformer):
             previous_transformer_output.append(CNNTransformer.transformers[index].output)
         x_data = np.asarray([[previous_transformer_output]])
         # prediction = self.model.predict(x_data)
-        prediction = x_data[0][0][1]
+        prediction = x_data[0][0][0]
         predicted_arg = np.argmax(prediction)
         CharPredictor.add_to_previous_predictions(predicted_arg)
         self.output = prediction

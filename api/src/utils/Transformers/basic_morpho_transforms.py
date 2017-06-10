@@ -1,5 +1,6 @@
 from .Transformer import Transformer
 from src import common
+from src.utils.Logger import Logger
 
 import cv2
 import numpy as np
@@ -62,5 +63,19 @@ class BoxHands(Transformer):
         self.out_key = 'boxed'
 
     def transform(self, X, **transform_params):
-        self.output = np.random.random((5, 1, 64, 64))
-        return self.output
+        Logger.log("x_trans_shape", X.shape)
+        if type(X) == list or len(X.shape) == 4:
+            grayscaled = []
+            for sample in X:
+                img_gray = cv2.cvtColor(sample, cv2.COLOR_BGR2GRAY)[:, :, np.newaxis]
+                img_gray /= 255.
+                grayscaled.append(img_gray)
+            tensor = np.array(grayscaled)
+            self.output = tensor
+            return self.output
+        elif len(X.shape) == 3:
+            self.output = cv2.cvtColor(X, cv2.COLOR_BGR2GRAY)[:, :, np.newaxis]
+            return self.output
+        else:
+            raise ValueError("Unknown shape of data")
+
