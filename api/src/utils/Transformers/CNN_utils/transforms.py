@@ -5,10 +5,11 @@ from ...AsciiEncoder import AsciiEncoder
 from .mocks import GestureClassifierMock, CharPredictionMock, PredictionSelectionMock, HandsLocalizerMock
 
 from keras.utils.np_utils import to_categorical
-from keras.models import model_from_json
+from keras.models import model_from_json, load_model
 from src.common import (
     HANDS_SEGMENTATION_FOLDER, ARCHITECTURE_JSON_NAME, WEIGHTS_H5_NAME, CHAR_PREDICTION_FOLDER, WEIGHTS_HDF5_NAME,
-    CLOSED_PALM_CASCADE, GEST_HAAR_CASCADE, OVERALL_PALM_CASCADE, CLASSIFIER_INPUT_SHAPE, GESTURE_PREDICTION_FOLDER
+    CLOSED_PALM_CASCADE, GEST_HAAR_CASCADE, OVERALL_PALM_CASCADE, CLASSIFIER_INPUT_SHAPE, GESTURE_PREDICTION_FOLDER,
+    CUSTOM_PALM_CASCADE
 )
 from src.utils.Logger import Logger
 from .helpers import Coordinates
@@ -45,6 +46,7 @@ class HandsLocalizerTracker(CNNTransformer):
         self.closed_hand_cascade = cv2.CascadeClassifier(CLOSED_PALM_CASCADE)
         self.open_hand_cascade = cv2.CascadeClassifier(OVERALL_PALM_CASCADE)
         self.gest_cascade = cv2.CascadeClassifier(GEST_HAAR_CASCADE)
+        self.third_hand_cascade = cv2.CascadeClassifier(os.path.join(CUSTOM_PALM_CASCADE))
         self.out_key = 'hands'
 
         self.tracker = None
@@ -56,6 +58,20 @@ class HandsLocalizerTracker(CNNTransformer):
         self.scale_factor = 1.1     # forged opencv parameter
         self.min_neighbors = 3      # forged opencv parameter
         self.tracker = None
+
+    @staticmethod
+    def threshold_image(img):
+        img = img.astype('uint8')
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        gray = cv2.GaussianBlur(gray, (21, 21), 0)
+        ret, thresholded = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        row, col = np.where(thresholded != 0)
+        left = col.min()
+        right = col.max()
+        mean = (left + right)//2
+        # img[thresholded == 255] = 0
+        img = img[:, mean - mean//2: mean + mean//2]
+        return img
 
     def transform(self, X, **transform_params):
         self.coordinates.max_height = X.shape[1]
@@ -74,7 +90,10 @@ class HandsLocalizerTracker(CNNTransformer):
                 gest = self.gest_cascade.detectMultiScale(frame, self.scale_factor, self.min_neighbors,
                                                           cv2.CASCADE_FIND_BIGGEST_OBJECT,
                                                           minSize=self.min_size)
-                hands = list(open_hands) + list(closed_hands) + list(gest)
+                custom_hands = self.third_hand_cascade.detectMultiScale(frame, self.scale_factor, self.min_neighbors,
+                                                                        cv2.CASCADE_FIND_BIGGEST_OBJECT,
+                                                                        minSize=self.min_size)
+                hands = list(open_hands) + list(closed_hands) + list(gest) + list(custom_hands)
 
                 if len(hands) == 0 and self.coordinates.has_cords():
                     x, y, w, h = self.coordinates.get_processed_cords()
@@ -104,7 +123,8 @@ class HandsLocalizerTracker(CNNTransformer):
             sliced = out[y:y+h, x:x+w]
             if HandsLocalizerTracker.is_shape_zero(sliced.shape):
                 sliced = out
-            scaled = cv2.resize(sliced, CLASSIFIER_INPUT_SHAPE, interpolation=cv2.INTER_LANCZOS4)
+            thresholded = HandsLocalizerTracker.threshold_image(sliced)
+            scaled = cv2.resize(thresholded, CLASSIFIER_INPUT_SHAPE, interpolation=cv2.INTER_CUBIC)
             transformed.append(scaled)
         self.output = np.asarray(transformed)
         return self.output
@@ -124,7 +144,6 @@ class HandsLocalizer(CNNTransformer):
         self.out_key = 'hands'
 
     def transform(self, X, **transform_params):
-        Logger.log("shape: " + str(X.max()))
         last_frame = np.asarray([X.transpose(0, 3, 1, 2)[-1]])
         prediction = self.model.predict(last_frame)
         prediction[prediction > 0.1] = 1.
@@ -160,8 +179,10 @@ class GestureClassifier(CNNTransformer):
             self.frame_counter += 1
             return None
 
-        inp = np.array(self.cache)
-        prediction = self.model.predict(inp.transpose((0, 3, 1, 2)))
+        inp = np.array(self.cache).transpose((0, 3, 1, 2))
+        inp = np.clip(inp * 1.7, 0, 1)
+        prediction = self.model.predict(inp)
+        # prediction = self.model.predict(inp[np.newaxis].transpose((0, 2, 1, 3, 4)))
         self.output = prediction[-1]
         self.clear_cache()
         return self.output
@@ -171,6 +192,7 @@ class GestureClassifier(CNNTransformer):
             model = model_from_json(f.read())
         model.load_weights(os.path.join(GESTURE_PREDICTION_FOLDER, WEIGHTS_H5_NAME))
         return model
+        # return load_model(os.path.join(GESTURE_PREDICTION_FOLDER, '90per.h5'))
         # return GestureClassifierMock.model()
 
 
@@ -234,12 +256,12 @@ class PredictionSelector(CNNTransformer):
                 self.frame_counter = 0
             self.frame_counter += 1
             return None
-        previous_transformer_output = []
-        for index in self.indices_of_transformers_to_combine:
-            previous_transformer_output.append(CNNTransformer.transformers[index].output)
-        x_data = np.asarray([[previous_transformer_output]])
+        gesture_prediction = CNNTransformer.transformers[self.indices_of_transformers_to_combine[0]].output
+        char_prediction = CNNTransformer.transformers[self.indices_of_transformers_to_combine[1]].output
+        # x_data = np.asarray([[previous_transformer_output]])
         # prediction = self.model.predict(x_data)
-        prediction = x_data[0][0][0]
+        # prediction = x_data[0][0][0]
+        prediction = gesture_prediction * 0.5 + char_prediction * 0.5
         predicted_arg = np.argmax(prediction)
         CharPredictor.add_to_previous_predictions(predicted_arg)
         self.output = prediction
