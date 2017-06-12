@@ -3,6 +3,7 @@ window.$ = window.jQuery = require('jquery')
 
 let logout = document.getElementById('btn-logout')
 let textWindow = document.getElementById('translation')
+let topPredictionsWindow = document.getElementById('predicted')
 let canvas = document.getElementById('video-stream-canvas')
 
 let ctx = canvas.getContext('2d');
@@ -34,6 +35,7 @@ let maskHeight = canvasMaskedWindow.offsetHeight
 let maskWidth = canvasMaskedWindow.offsetWidth
 
 let predicted = true
+let initialPrediction = false
 
 const DEBUG = true
 
@@ -82,11 +84,18 @@ function classifyLetters(){
     // async: false,
     data: {'img_array': JSON.stringify(cameraShots), 'debug': DEBUG},
     success: function(response) {
-      processResponse(response)
+      if (!initialPrediction) {
+        initialPrediction = true
+      } else {
+        processResponse(response)
+      }
       predicted = true
     },
     error: function(msg) {
       console.log(msg)
+      setTimeout(function() {
+        classifyLetters()
+      }, 500)
     }
   })
 }
@@ -100,6 +109,23 @@ function processResponse(response) {
     assignImgIfNotNullToContext(ctxCharPrediction, response.predictedChars)
     assignImgIfNotNullToContext(ctxGestureClassification, response.classifiedGestures)
     assignImgIfNotNullToContext(ctxFinalPrediction, response.finallyPredicted)
+    let insert = true
+    let formattedResponse = []
+    for (var index in response.nearestPredictions) {
+      if (response.nearestPredictions[index] === "") {
+        insert = false
+        break
+      } else {
+        if (response.nearestPredictions[index] === " ") {
+          formattedResponse[index] = "*space*"
+        } else {
+          formattedResponse[index] = response.nearestPredictions[index]
+        }
+      }
+    }
+    if (insert) {
+      topPredictionsWindow.innerHTML = formattedResponse.join('<span style="display:inline-block; width: 1.7em;"></span>')
+    }
   }
   scrollToBottom(1000, textWindow);
 }

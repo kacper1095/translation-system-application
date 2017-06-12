@@ -58,6 +58,7 @@ class HandsLocalizerTracker(CNNTransformer):
         self.scale_factor = 1.1     # forged opencv parameter
         self.min_neighbors = 3      # forged opencv parameter
         self.tracker = None
+        self.fitting_with_cascades_frequency = 40
 
     @staticmethod
     def threshold_image(img):
@@ -78,7 +79,7 @@ class HandsLocalizerTracker(CNNTransformer):
         self.coordinates.max_width = X.shape[2]
         offset = 0
         for frame in X.astype('uint8'):
-            if not self.tracker_init or self.counter == 20:
+            if not self.tracker_init or self.counter == self.fitting_with_cascades_frequency:
                 self.counter = 0
                 self.coordinates.clear_all()
                 closed_hands = self.closed_hand_cascade.detectMultiScale(frame, self.scale_factor, self.min_neighbors,
@@ -176,11 +177,12 @@ class GestureClassifier(CNNTransformer):
             if self.frame_counter == CNNTransformer.MAX_FRAME_COUNTER:
                 self.cache.append(X[-1])
                 self.frame_counter = 0
-            self.frame_counter += 1
+            else:
+                self.frame_counter += 1
             return None
 
         inp = np.array(self.cache).transpose((0, 3, 1, 2))
-        inp = np.clip(inp * 1.7, 0, 1)
+        inp = np.clip(inp * 1.5, 0, 1)
         prediction = self.model.predict(inp)
         # prediction = self.model.predict(inp[np.newaxis].transpose((0, 2, 1, 3, 4)))
         self.output = prediction[-1]
@@ -211,7 +213,8 @@ class CharPredictor(CNNTransformer):
             if self.frame_counter == CNNTransformer.MAX_FRAME_COUNTER:
                 self.cache.append(True)
                 self.frame_counter = 0
-            self.frame_counter += 1
+            else:
+                self.frame_counter += 1
             return None
         x_data = CharPredictor.__previous_predictions
         self.output = self.model.predict(np.asarray([x_data]))[0]
@@ -254,14 +257,16 @@ class PredictionSelector(CNNTransformer):
             if self.frame_counter == CNNTransformer.MAX_FRAME_COUNTER:
                 self.cache.append(True)
                 self.frame_counter = 0
-            self.frame_counter += 1
+            else:
+                self.frame_counter += 1
             return None
         gesture_prediction = CNNTransformer.transformers[self.indices_of_transformers_to_combine[0]].output
         char_prediction = CNNTransformer.transformers[self.indices_of_transformers_to_combine[1]].output
         # x_data = np.asarray([[previous_transformer_output]])
         # prediction = self.model.predict(x_data)
         # prediction = x_data[0][0][0]
-        prediction = gesture_prediction * 0.5 + char_prediction * 0.5
+        prediction = gesture_prediction * 0.8 + char_prediction * 0.2
+        # prediction = gesture_prediction
         predicted_arg = np.argmax(prediction)
         CharPredictor.add_to_previous_predictions(predicted_arg)
         self.output = prediction

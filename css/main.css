@@ -342,6 +342,25 @@ background: -webkit-radial-gradient(circle, rgb(20, 20, 20), rgb(21, 21, 21));
   overflow: hidden;
 }
 
+.top-predicted-section {
+  position: fixed;
+  width: 20%;
+  background-color: rgba(0, 0, 0, 0.8);
+  bottom: 25%;
+  height: 5%;
+  border: 1px solid rgba(178, 178, 178, 1);
+  overflow: hidden;
+  transform: translate(-50%, 0);
+  margin-left: 50%;
+}
+
+#predicted{
+  text-align: center;
+  color: white;
+  font-size: x-large;
+  transform: translate(0, 20%);
+}
+
 #translation {
   display: block;
   width: 100%;

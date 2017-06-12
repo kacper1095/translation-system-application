@@ -5,6 +5,7 @@ os.environ['THEANO_FLAGS'] = 'floatX=float32,mode=FAST_RUN'
 from flask import Flask
 from flask_restful import Resource, Api, request
 from flask_cors import CORS
+from flask_sockets import Sockets
 from pipeline import evaluate, load_transformers, convert_last_output_to_ascii, convert_hand_tracker_output_to_readable
 from src.utils.AsciiEncoder import AsciiEncoder
 from src.utils.Logger import Logger
@@ -64,6 +65,7 @@ class Classifier(Resource):
             img_array = json.loads(img_array_json)
             evaluated = evaluate(img_array)
             ascii_output_from_last_layer = convert_last_output_to_ascii(evaluated['prediction_selection'])
+            Logger.log("ascii", ascii_output_from_last_layer)
             if debug:
                 localized_hands_output = Classifier.convert_img(
                     convert_hand_tracker_output_to_readable(evaluated['hands'][-1]))
@@ -71,15 +73,15 @@ class Classifier(Resource):
                 classified_gestures = Classifier.generate_plot(evaluated['gesture'], 'gesture')
                 finally_predicted = Classifier.generate_plot(evaluated['prediction_selection'], 'selection')
                 return {
-                    'result': ascii_output_from_last_layer,
+                    'result': ascii_output_from_last_layer[0],
                     'resized': localized_hands_output,
                     'predictedChars': predicted_chars,
                     'classifiedGestures': classified_gestures,
-                    'finallyPredicted': finally_predicted
+                    'finallyPredicted': finally_predicted,
+                    'nearestPredictions': ascii_output_from_last_layer
                 }
             else:
                 return {'result': ascii_output_from_last_layer}
-
 
 clear_log()
 load_transformers()
