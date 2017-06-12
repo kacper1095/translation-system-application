@@ -69,9 +69,10 @@ def evaluate(json_array, stages=True):
     return get_letter(sequence) if not stages else get_stages(sequence)
 
 
-def convert_last_output_to_ascii(last_output, number_of_predictions=5):
+def convert_last_output_to_ascii(last_output, number_of_predictions=5, which_selection=0):
     if last_output is None:
         return [''] * number_of_predictions
+    last_output = last_output[which_selection]
     indices = np.argsort(last_output)[::-1]
     # index = np.argmax(last_output)
     return AsciiEncoder.convert_indexes_to_characters(indices[:number_of_predictions]).tolist()

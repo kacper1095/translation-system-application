@@ -3,6 +3,7 @@ window.$ = window.jQuery = require('jquery')
 
 let logout = document.getElementById('btn-logout')
 let textWindow = document.getElementById('translation')
+let dictionaryPredictionWindow = document.getElementById('dictionary-prediction')
 let topPredictionsWindow = document.getElementById('predicted')
 let canvas = document.getElementById('video-stream-canvas')
 
@@ -126,6 +127,7 @@ function processResponse(response) {
     if (insert) {
       topPredictionsWindow.innerHTML = formattedResponse.join('<span style="display:inline-block; width: 1.7em;"></span>')
     }
+    dictionaryPredictionWindow.innerHTML = dictionaryPredictionWindow.innerHTML + response.dictionaryPrediction
   }
   scrollToBottom(1000, textWindow);
 }

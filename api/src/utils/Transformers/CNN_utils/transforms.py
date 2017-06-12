@@ -182,7 +182,7 @@ class GestureClassifier(CNNTransformer):
             return None
 
         inp = np.array(self.cache).transpose((0, 3, 1, 2))
-        inp = np.clip(inp * 1.5, 0, 1)
+        # inp = np.clip(inp * 2.5, 0, 1)
         prediction = self.model.predict(inp)
         # prediction = self.model.predict(inp[np.newaxis].transpose((0, 2, 1, 3, 4)))
         self.output = prediction[-1]
@@ -269,6 +269,7 @@ class PredictionSelector(CNNTransformer):
         # prediction = gesture_prediction
         predicted_arg = np.argmax(prediction)
         CharPredictor.add_to_previous_predictions(predicted_arg)
+        prediction = np.array([prediction, char_prediction])
         self.output = prediction
         self.clear_cache()
         return self.output
