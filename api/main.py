@@ -5,7 +5,7 @@ os.environ['THEANO_FLAGS'] = 'floatX=float32,mode=FAST_RUN'
 from flask import Flask
 from flask_restful import Resource, Api, request
 from flask_cors import CORS
-from flask_sockets import Sockets
+# from flask_sockets import Sockets
 from pipeline import evaluate, load_transformers, convert_last_output_to_ascii, convert_hand_tracker_output_to_readable
 from src.utils.AsciiEncoder import AsciiEncoder
 from src.utils.Logger import Logger
@@ -64,7 +64,7 @@ class Classifier(Resource):
     def post(self):
         with Logger("all"):
             img_array_json = request.form.get('img_array')
-            debug = bool(request.form.get('debug'))
+            debug = request.form.get('debug') == 'true'
             img_array = json.loads(img_array_json)
             evaluated = evaluate(img_array)
             ascii_output_from_last_layer = convert_last_output_to_ascii(evaluated['prediction_selection'], which_selection=COMBINED_PREDICTION_INDEX)
@@ -86,7 +86,7 @@ class Classifier(Resource):
                     'dictionaryPrediction': dictionary_prediction
                 }
             else:
-                return {'result': ascii_output_from_last_layer}
+                return {'result': ascii_output_from_last_layer[0]}
 
 clear_log()
 load_transformers()

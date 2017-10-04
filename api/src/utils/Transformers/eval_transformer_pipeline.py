@@ -1,5 +1,6 @@
 from src.utils.Logger import Logger
 
+
 def score_transformer_pipeline(video, transformer_list):
     video_transform_steps = [video]
     scores = []

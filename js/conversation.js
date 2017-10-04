@@ -1,44 +1,44 @@
-const {ipcRenderer} = require('electron')
-window.$ = window.jQuery = require('jquery')
+const {ipcRenderer} = require('electron');
+window.$ = window.jQuery = require('jquery');
 
-let logout = document.getElementById('btn-logout')
-let textWindow = document.getElementById('translation')
-let dictionaryPredictionWindow = document.getElementById('dictionary-prediction')
-let topPredictionsWindow = document.getElementById('predicted')
-let canvas = document.getElementById('video-stream-canvas')
+let logout = document.getElementById('btn-logout');
+let textWindow = document.getElementById('translation');
+let dictionaryPredictionWindow = document.getElementById('dictionary-prediction');
+let topPredictionsWindow = document.getElementById('predicted');
+let canvas = document.getElementById('video-stream-canvas');
 
 let ctx = canvas.getContext('2d');
 let mediaStream = null;
-let video = document.getElementById('camera')
-let cameraShots = new Array()
+let video = document.getElementById('camera');
+let cameraShots = new Array();
 
-let canvasMasked = document.getElementById('masked-window-canvas')
-let canvasMaskedWindow = document.getElementById('masked-window')
+let canvasMasked = document.getElementById('masked-window-canvas');
+let canvasMaskedWindow = document.getElementById('masked-window');
 let ctxMasked = canvasMasked.getContext('2d');
 
 
-let canvasCharPrediction = document.getElementById('char-prediction-window-canvas')
-let canvasCharPredictionWindow = document.getElementById('char-prediction-window')
+let canvasCharPrediction = document.getElementById('char-prediction-window-canvas');
+let canvasCharPredictionWindow = document.getElementById('char-prediction-window');
 let ctxCharPrediction = canvasCharPrediction.getContext('2d');
 
 
-let canvasGestureClassification = document.getElementById('gesture-classification-window-canvas')
-let canvasGestureClassificationWindow = document.getElementById('gesture-classification-window')
+let canvasGestureClassification = document.getElementById('gesture-classification-window-canvas');
+let canvasGestureClassificationWindow = document.getElementById('gesture-classification-window');
 let ctxGestureClassification = canvasGestureClassification.getContext('2d');
 
 
-let canvasFinalPrediction = document.getElementById('final-prediction-window-canvas')
-let canvasFinalPredictionWindow = document.getElementById('final-prediction-window')
+let canvasFinalPrediction = document.getElementById('final-prediction-window-canvas');
+let canvasFinalPredictionWindow = document.getElementById('final-prediction-window');
 let ctxFinalPrediction = canvasFinalPrediction.getContext('2d');
 
 
-let maskHeight = canvasMaskedWindow.offsetHeight
-let maskWidth = canvasMaskedWindow.offsetWidth
+let maskHeight = canvasMaskedWindow.offsetHeight;
+let maskWidth = canvasMaskedWindow.offsetWidth;
 
-let predicted = true
-let initialPrediction = false
+let predicted = true;
+let initialPrediction = false;
 
-const DEBUG = true
+const DEBUG = true;
 
 let videoConstraints = {
   video: {
@@ -79,6 +79,7 @@ function scrollToBottom(scrollDuration, element) {
 }
 
 function classifyLetters(){
+  console.log(cameraShots.length);
   $.ajax({
     type: "POST",
     url: "http://localhost:5000/",
@@ -86,17 +87,17 @@ function classifyLetters(){
     data: {'img_array': JSON.stringify(cameraShots), 'debug': DEBUG},
     success: function(response) {
       if (!initialPrediction) {
-        initialPrediction = true
+        initialPrediction = true;
       } else {
         processResponse(response)
       }
-      predicted = true
+      predicted = true;
     },
     error: function(msg) {
-      console.log(msg)
+      console.log(msg);
       setTimeout(function() {
-        classifyLetters()
-      }, 500)
+        classifyLetters();
+      }, 50)
     }
   })
 }
@@ -133,12 +134,12 @@ function processResponse(response) {
 }
 
 function assignImgIfNotNullToContext(context, responsePart) {
-  if (responsePart === null) return
-  var img = new Image
+  if (responsePart === null) return;
+  var img = new Image;
   img.onload = function() {
-    context.drawImage(img, 0, 0, maskWidth, maskHeight)
+    context.drawImage(img, 0, 0, maskWidth, maskHeight);
   }
-  img.src = responsePart
+  img.src = responsePart;
 }
 
 function snapshot() {
@@ -146,22 +147,20 @@ function snapshot() {
     return;
   }
   if (canvas.width != video.videoWidth) {
-    canvas.width = maskWidth
-    canvas.height = maskHeight
+    canvas.width = maskWidth;
+    canvas.height = maskHeight;
     if (DEBUG) {
-      insertBorderToWindow(canvasMaskedWindow)
-      insertBorderToWindow(canvasGestureClassificationWindow)
-      insertBorderToWindow(canvasCharPredictionWindow)
-      insertBorderToWindow(canvasFinalPredictionWindow)
+      insertBorderToWindow(canvasMaskedWindow);
+      insertBorderToWindow(canvasGestureClassificationWindow);
+      insertBorderToWindow(canvasCharPredictionWindow);
+      insertBorderToWindow(canvasFinalPredictionWindow);
     }
   }
   if (mediaStream) {
-    if (predicted) {
-      if (cameraShots.length >= 1) {
-        predicted = false
-        classifyLetters()
-        cameraShots = []
-      }
+    if (predicted && cameraShots.length >= 1) {
+      predicted = false;
+      classifyLetters();
+      cameraShots = Array();
     }
     ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight,
                          0, 0, canvas.width, canvas.height);
@@ -172,21 +171,21 @@ function snapshot() {
 }
 
 function insertBorderToWindow(canvasWindow) {
-  canvasWindow.style.border = "1px solid gray"
+  canvasWindow.style.border = "1px solid gray";
 }
 
 function init () {
-  resizeCanvas(canvasMasked, maskWidth, maskHeight)
-  resizeCanvas(canvas, maskWidth, maskHeight)
-  resizeCanvas(canvasCharPrediction, maskWidth, maskHeight)
-  resizeCanvas(canvasGestureClassification, maskWidth, maskHeight)
-  resizeCanvas(canvasFinalPrediction, maskWidth, maskHeight)
+  resizeCanvas(canvasMasked, maskWidth, maskHeight);
+  resizeCanvas(canvas, maskWidth, maskHeight);
+  resizeCanvas(canvasCharPrediction, maskWidth, maskHeight);
+  resizeCanvas(canvasGestureClassification, maskWidth, maskHeight);
+  resizeCanvas(canvasFinalPrediction, maskWidth, maskHeight);
 }
 
 function resizeCanvas(canvas, width, height) {
-  canvas.width = width
-  canvas.height = height
+  canvas.width = width;
+  canvas.height = height;
 }
 
-init()
-setInterval(snapshot, 1) // 5 frames per second
+init();
+setInterval(snapshot, 1); // 5 frames per second
