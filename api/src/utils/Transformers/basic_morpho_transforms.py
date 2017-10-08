@@ -63,12 +63,11 @@ class BoxHands(Transformer):
         self.out_key = 'boxed'
 
     def transform(self, X, **transform_params):
-        Logger.log("x_trans_shape", X.shape)
         if type(X) == list or len(X.shape) == 4:
             grayscaled = []
             for sample in X:
-                img_gray = cv2.cvtColor(sample, cv2.COLOR_BGR2GRAY)[:, :, np.newaxis].astype('float32')
-
+                img_gray = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB).astype('float32')
+                Logger.log('values', str(img_gray))
                 img_gray /= 255.
                 grayscaled.append(img_gray)
             tensor = np.array(grayscaled)

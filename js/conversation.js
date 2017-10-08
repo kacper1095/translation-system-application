@@ -80,26 +80,28 @@ function scrollToBottom(scrollDuration, element) {
 
 function classifyLetters(){
   console.log(cameraShots.length);
-  $.ajax({
-    type: "POST",
-    url: "http://localhost:5000/",
-    // async: false,
-    data: {'img_array': JSON.stringify(cameraShots), 'debug': DEBUG},
-    success: function(response) {
-      if (!initialPrediction) {
-        initialPrediction = true;
-      } else {
-        processResponse(response)
+  if (cameraShots.length > 0) {
+    $.ajax({
+      type: "POST",
+      url: "http://localhost:5000/",
+      // async: false,
+      data: {'img_array': JSON.stringify(cameraShots), 'debug': DEBUG},
+      success: function(response) {
+        if (!initialPrediction) {
+          initialPrediction = true;
+        } else {
+          processResponse(response)
+        }
+        predicted = true;
+      },
+      error: function(msg) {
+        console.log(msg);
+        setTimeout(function() {
+          classifyLetters();
+        }, 50)
       }
-      predicted = true;
-    },
-    error: function(msg) {
-      console.log(msg);
-      setTimeout(function() {
-        classifyLetters();
-      }, 50)
-    }
-  })
+    });
+  }
 }
 
 function processResponse(response) {

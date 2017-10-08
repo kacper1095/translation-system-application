@@ -23,7 +23,8 @@ def eval_transformer_pipeline_store_all(video, transformer_list):
     video_transform_steps = [video]
     outputs = {'init': video}
     for transformer in transformer_list:
-        step_output = transformer.transform(video_transform_steps[-1])
+        with Logger(transformer.__class__.__name__):
+            step_output = transformer.transform(video_transform_steps[-1])
         outputs[transformer.out_key] = step_output
         video_transform_steps.append(step_output)
     return outputs

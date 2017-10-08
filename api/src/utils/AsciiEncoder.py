@@ -10,7 +10,7 @@ class AsciiEncoder:
         encoder = skl_preproc.LabelEncoder()
         encoder.fit(list(AsciiEncoder.AVAILABLE_CHARS))
 
-        return encoder.transform(characters_array)
+        return encoder.transform(list(characters_array))
 
     @staticmethod
     def convert_indexes_to_characters(indexes_array):

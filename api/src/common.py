@@ -29,3 +29,5 @@ WEIGHTS_HDF5_NAME = 'weights.hdf5'
 
 MEAN_VALUE_VGG = np.array([103.939, 116.779, 123.68])
 CLASSIFIER_INPUT_SHAPE = (64, 64)
+
+TESTING_VIDEO_FOLDER = os.path.join('data', 'test')

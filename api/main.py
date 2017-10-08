@@ -68,7 +68,6 @@ class Classifier(Resource):
             img_array = json.loads(img_array_json)
             evaluated = evaluate(img_array)
             ascii_output_from_last_layer = convert_last_output_to_ascii(evaluated['prediction_selection'], which_selection=COMBINED_PREDICTION_INDEX)
-            Logger.log("ascii", ascii_output_from_last_layer)
             if debug:
                 localized_hands_output = Classifier.convert_img(
                     convert_hand_tracker_output_to_readable(evaluated['hands'][-1]))

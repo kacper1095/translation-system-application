@@ -3,6 +3,7 @@ from __future__ import print_function
 from ..Transformer import Transformer
 from ...AsciiEncoder import AsciiEncoder
 from .mocks import GestureClassifierMock, CharPredictionMock, PredictionSelectionMock, HandsLocalizerMock
+from .metrics import f1
 
 from keras.utils.np_utils import to_categorical
 from keras.models import model_from_json, load_model
@@ -127,6 +128,14 @@ class HandsLocalizerTracker(CNNTransformer):
             thresholded = HandsLocalizerTracker.threshold_image(sliced)
             scaled = cv2.resize(thresholded, CLASSIFIER_INPUT_SHAPE, interpolation=cv2.INTER_CUBIC)
             transformed.append(scaled)
+
+        transformed = []
+        for out in output:
+            h, w, _ = out.shape
+            sliced = out[int(h * 0.2):, int(w * 0.2):]
+            scaled = cv2.resize(sliced, CLASSIFIER_INPUT_SHAPE, interpolation=cv2.INTER_LINEAR)
+            Logger.log_img(scaled)
+            transformed.append(scaled)
         self.output = np.asarray(transformed)
         return self.output
 
@@ -182,17 +191,30 @@ class GestureClassifier(CNNTransformer):
             return None
 
         inp = np.array(self.cache).transpose((0, 3, 1, 2))
-        # inp = np.clip(inp * 2.5, 0, 1)
-        prediction = self.model.predict(inp)
-        # prediction = self.model.predict(inp[np.newaxis].transpose((0, 2, 1, 3, 4)))
-        self.output = prediction[-1]
+        prediction = self.model.predict(inp[-1:])[-1]
+        prediction = self.change_prediction_places(prediction)
+        self.output = prediction
         self.clear_cache()
         return self.output
 
+    def change_prediction_places(self, prediction):
+        """
+        Dirty fix, delete after new model has been trained
+        :param prediction:
+        :return:
+        """
+        import string
+        temp = prediction[:len(string.ascii_lowercase)]
+        prediction[:len(string.digits)] = prediction[len(string.ascii_lowercase):]
+        prediction[len(string.digits):] = temp
+        return prediction
+
     def load_model(self):
-        with open(os.path.join(GESTURE_PREDICTION_FOLDER, ARCHITECTURE_JSON_NAME)) as f:
-            model = model_from_json(f.read())
-        model.load_weights(os.path.join(GESTURE_PREDICTION_FOLDER, WEIGHTS_H5_NAME))
+        # with open(os.path.join(GESTURE_PREDICTION_FOLDER, ARCHITECTURE_JSON_NAME)) as f:
+        #     model = model_from_json(f.read())
+        # model.load_weights(os.path.join(GESTURE_PREDICTION_FOLDER, WEIGHTS_H5_NAME))
+        model = load_model(os.path.join(GESTURE_PREDICTION_FOLDER, WEIGHTS_H5_NAME),
+                           custom_objects={'f1': f1})
         return model
         # return load_model(os.path.join(GESTURE_PREDICTION_FOLDER, '90per.h5'))
         # return GestureClassifierMock.model()
@@ -265,6 +287,7 @@ class PredictionSelector(CNNTransformer):
         # x_data = np.asarray([[previous_transformer_output]])
         # prediction = self.model.predict(x_data)
         # prediction = x_data[0][0][0]
+        gesture_prediction = np.insert(gesture_prediction, 0, [0.0])
         prediction = gesture_prediction * 0.8 + char_prediction * 0.2
         # prediction = gesture_prediction
         predicted_arg = np.argmax(prediction)
