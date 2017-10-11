@@ -10,9 +10,11 @@ from keras.models import model_from_json, load_model
 from src.common import (
     HANDS_SEGMENTATION_FOLDER, ARCHITECTURE_JSON_NAME, WEIGHTS_H5_NAME, CHAR_PREDICTION_FOLDER, WEIGHTS_HDF5_NAME,
     CLOSED_PALM_CASCADE, GEST_HAAR_CASCADE, OVERALL_PALM_CASCADE, CLASSIFIER_INPUT_SHAPE, GESTURE_PREDICTION_FOLDER,
-    CUSTOM_PALM_CASCADE
+    CUSTOM_PALM_CASCADE, PATH_TO_CKPT_BOXING, BOXING_INPUT_TENSOR_NAME, BOXING_OUTPUT_TENSOR_NAME, MIN_THRESHOLD_BOXES
 )
 from src.utils.Logger import Logger
+
+from .utils import TensorflowWrapper
 from .helpers import Coordinates
 
 import sys
@@ -39,6 +41,68 @@ class CNNTransformer(Transformer):
 
     def load_model(self):
         pass
+
+
+class TensorflowHandsLocalizer(CNNTransformer):
+    def __init__(self):
+        super(TensorflowHandsLocalizer, self).__init__()
+        self.model = self.load_model()
+        self.out_key = 'hands'
+        self.previous_coordinates = []
+        self.max_preious_elements = 10
+
+    def transform(self, X, **transform_params):
+        input_image = X[-1]
+        inp = np.array([input_image]).transpose((0, 3, 1, 2))
+        prediction_boxes, prediction_scores = self.model.predict(inp)
+        boxes_with_scores = self.process_output(input_image, prediction_boxes[0], prediction_scores[0])
+        if len(boxes_with_scores) == 0 and len(self.previous_coordinates) == 0:
+            resized = []
+            for img in X:
+                resized.append(cv2.resize(img, CLASSIFIER_INPUT_SHAPE))
+            self.output = np.array(resized)
+            return self.output
+        else:
+            hand_boxes = self.cut_hands(input_image, boxes_with_scores, num_of_boxes=1)
+            for hand in hand_boxes:
+                Logger.log_img(hand)
+            # output = X.transpose(0, 3, 1, 2)
+            self.output = np.array([hand_boxes[0]])
+            return self.output
+
+    def load_model(self):
+        return TensorflowWrapper(PATH_TO_CKPT_BOXING, BOXING_INPUT_TENSOR_NAME, BOXING_OUTPUT_TENSOR_NAME)
+        # return HandsLocalizerMock.model()
+
+    def process_output(self, image, boxes, scores):
+        h, w, c = image.shape
+        result_boxes = []
+        for i in range(len(boxes)):
+            if scores[i] > MIN_THRESHOLD_BOXES:
+                ymin, xmin, ymax, xmax = boxes[i]
+                left, right, top, bottom = (xmin * w, xmax * w, ymin * h, ymax * h)
+                result_boxes.append((left, right, top, bottom, scores[i]))
+        return np.array(result_boxes)
+
+    def cut_hands(self, image, boxes_with_scores, num_of_boxes=1):
+        hands = []
+        if len(boxes_with_scores) > 0:
+            sorted_boxes_with_scores_indices = np.argsort(boxes_with_scores[:, -1])[:num_of_boxes]
+            for index in sorted_boxes_with_scores_indices:
+                left, right, top, bottom, score = boxes_with_scores[index]
+                self.add_elem_to_previous_coordinates((left, right, top, bottom))
+        mean_left, mean_right, mean_top, mean_bottom = self.get_mean_coordinates()
+        hand = image[int(mean_top):int(mean_bottom), int(mean_left):int(mean_right)]
+        hands.append(cv2.resize(hand, CLASSIFIER_INPUT_SHAPE))
+        return np.array(hands)
+
+    def add_elem_to_previous_coordinates(self, elem):
+        if len(self.previous_coordinates) == self.max_preious_elements:
+            self.previous_coordinates.pop(0)
+        self.previous_coordinates.append(elem)
+
+    def get_mean_coordinates(self):
+        return np.mean(np.array(self.previous_coordinates), axis=0)
 
 
 class HandsLocalizerTracker(CNNTransformer):
@@ -147,34 +211,6 @@ class HandsLocalizerTracker(CNNTransformer):
         return False
 
 
-class HandsLocalizer(CNNTransformer):
-    def __init__(self):
-        super(HandsLocalizer, self).__init__()
-        self.model = self.load_model()
-        self.out_key = 'hands'
-
-    def transform(self, X, **transform_params):
-        last_frame = np.asarray([X.transpose(0, 3, 1, 2)[-1]])
-        prediction = self.model.predict(last_frame)
-        prediction[prediction > 0.1] = 1.
-        Logger.log("output_shape: " + str(prediction.shape))
-        # output = X.transpose(0, 3, 1, 2)
-        output = X.copy() * 255.
-        prediction_colored = cv2.cvtColor((prediction[0][0] * 255), cv2.COLOR_GRAY2BGR)
-        cv2.imwrite('text.jpg', prediction_colored)
-        Logger.log("color shape: " + str(prediction_colored.max()))
-        output[-1] = prediction_colored
-        self.output = output
-        return self.output
-
-    def load_model(self):
-        with open(os.path.join(HANDS_SEGMENTATION_FOLDER, ARCHITECTURE_JSON_NAME), 'r') as f:
-            model = model_from_json(f.read())
-        model.load_weights(os.path.join(HANDS_SEGMENTATION_FOLDER, WEIGHTS_H5_NAME))
-        return model
-        # return HandsLocalizerMock.model()
-
-
 class GestureClassifier(CNNTransformer):
     def __init__(self):
         super(GestureClassifier, self).__init__()
@@ -190,24 +226,13 @@ class GestureClassifier(CNNTransformer):
                 self.frame_counter += 1
             return None
 
+        for elem in self.cache:
+            Logger.log('shape cache', np.array(elem).shape)
         inp = np.array(self.cache).transpose((0, 3, 1, 2))
         prediction = self.model.predict(inp[-1:])[-1]
-        prediction = self.change_prediction_places(prediction)
         self.output = prediction
         self.clear_cache()
         return self.output
-
-    def change_prediction_places(self, prediction):
-        """
-        Dirty fix, delete after new model has been trained
-        :param prediction:
-        :return:
-        """
-        import string
-        temp = prediction[:len(string.ascii_lowercase)]
-        prediction[:len(string.digits)] = prediction[len(string.ascii_lowercase):]
-        prediction[len(string.digits):] = temp
-        return prediction
 
     def load_model(self):
         # with open(os.path.join(GESTURE_PREDICTION_FOLDER, ARCHITECTURE_JSON_NAME)) as f:

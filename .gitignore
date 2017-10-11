@@ -234,3 +234,4 @@ venv.bak/
 
 api/data
 api/test
+api/log.txt

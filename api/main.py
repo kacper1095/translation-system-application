@@ -7,15 +7,12 @@ from flask_restful import Resource, Api, request
 from flask_cors import CORS
 # from flask_sockets import Sockets
 from pipeline import evaluate, load_transformers, convert_last_output_to_ascii, convert_hand_tracker_output_to_readable
-from src.utils.AsciiEncoder import AsciiEncoder
 from src.utils.Logger import Logger
 from urllib.parse import quote
 import json
 import cv2
 import os
 import base64
-import time
-import numpy as np
 import matplotlib.pyplot as plt
 from io import BytesIO
 

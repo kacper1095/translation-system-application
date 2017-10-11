@@ -67,14 +67,13 @@ class BoxHands(Transformer):
             grayscaled = []
             for sample in X:
                 img_gray = cv2.cvtColor(sample, cv2.COLOR_BGR2RGB).astype('float32')
-                Logger.log('values', str(img_gray))
                 img_gray /= 255.
                 grayscaled.append(img_gray)
             tensor = np.array(grayscaled)
             self.output = tensor
             return self.output
         elif len(X.shape) == 3:
-            self.output = cv2.cvtColor(X, cv2.COLOR_BGR2GRAY)[:, :, np.newaxis]
+            self.output = cv2.cvtColor(X, cv2.COLOR_BGR2RGB)
             return self.output
         else:
             raise ValueError("Unknown shape of data")

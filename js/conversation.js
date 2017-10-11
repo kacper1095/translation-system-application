@@ -79,8 +79,8 @@ function scrollToBottom(scrollDuration, element) {
 }
 
 function classifyLetters(){
-  console.log(cameraShots.length);
   if (cameraShots.length > 0) {
+    console.log(cameraShots.length);
     $.ajax({
       type: "POST",
       url: "http://localhost:5000/",

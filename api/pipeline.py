@@ -1,7 +1,7 @@
 from PIL import Image
 from binascii import a2b_base64
 from src.utils.Transformers.CNN_utils.transforms import (
-    HandsLocalizer, GestureClassifier, CharPredictor, PredictionSelector, CNNTransformer, HandsLocalizerTracker
+    GestureClassifier, CharPredictor, PredictionSelector, CNNTransformer, HandsLocalizerTracker, TensorflowHandsLocalizer
 )
 from src.utils.Transformers.basic_morpho_transforms import (
     Resizer, BoxHands, Normalizer, BGR2HSV
@@ -27,13 +27,15 @@ def load_transformers():
         # Normalizer(),
         # BGR2HSV(),
         # HandsLocalizer(),
-        HandsLocalizerTracker(),
+        # HandsLocalizerTracker(),
+        TensorflowHandsLocalizer(),
         BoxHands(),
         GestureClassifier(),
         CharPredictor(num_of_chars=20),
         PredictionSelector(indices_of_transformers_to_combine=[3, 4])
     ]
     CNNTransformer.transformers = transformers
+    return transformers
 
 
 def get_letter(video_sequence):

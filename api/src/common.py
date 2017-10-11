@@ -31,3 +31,8 @@ MEAN_VALUE_VGG = np.array([103.939, 116.779, 123.68])
 CLASSIFIER_INPUT_SHAPE = (64, 64)
 
 TESTING_VIDEO_FOLDER = os.path.join('data', 'test')
+
+PATH_TO_CKPT_BOXING = os.path.join(HANDS_SEGMENTATION_FOLDER, 'frozen_inference_graph.pb')
+BOXING_INPUT_TENSOR_NAME = 'image_tensor:0'
+BOXING_OUTPUT_TENSOR_NAME = 'detection_boxes:0,detection_scores:0'
+MIN_THRESHOLD_BOXES = 0.5

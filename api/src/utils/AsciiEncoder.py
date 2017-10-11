@@ -19,3 +19,7 @@ class AsciiEncoder:
 
         return encoder.inverse_transform(indexes_array)
 
+
+if __name__ == '__main__':
+    print(AsciiEncoder.AVAILABLE_CHARS)
+    print(AsciiEncoder.convert_characters_to_indexes(AsciiEncoder.AVAILABLE_CHARS))
