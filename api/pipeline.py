@@ -29,10 +29,11 @@ def load_transformers():
         # HandsLocalizer(),
         # HandsLocalizerTracker(),
         TensorflowHandsLocalizer(),
+        Resizer(height=CLASSIFIER_INPUT_SHAPE[0], width=CLASSIFIER_INPUT_SHAPE[1], use_cv=True),
         BoxHands(),
         GestureClassifier(),
         CharPredictor(num_of_chars=20),
-        PredictionSelector(indices_of_transformers_to_combine=[3, 4])
+        PredictionSelector(indices_of_transformers_to_combine=[4, 5])
     ]
     CNNTransformer.transformers = transformers
     return transformers

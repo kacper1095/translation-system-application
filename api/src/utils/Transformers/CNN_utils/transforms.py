@@ -57,16 +57,10 @@ class TensorflowHandsLocalizer(CNNTransformer):
         prediction_boxes, prediction_scores = self.model.predict(inp)
         boxes_with_scores = self.process_output(input_image, prediction_boxes[0], prediction_scores[0])
         if len(boxes_with_scores) == 0 and len(self.previous_coordinates) == 0:
-            resized = []
-            for img in X:
-                resized.append(cv2.resize(img, CLASSIFIER_INPUT_SHAPE))
-            self.output = np.array(resized)
+            self.output = np.array(X)
             return self.output
         else:
             hand_boxes = self.cut_hands(input_image, boxes_with_scores, num_of_boxes=1)
-            for hand in hand_boxes:
-                Logger.log_img(hand)
-            # output = X.transpose(0, 3, 1, 2)
             self.output = np.array([hand_boxes[0]])
             return self.output
 
@@ -93,9 +87,7 @@ class TensorflowHandsLocalizer(CNNTransformer):
                 self.add_elem_to_previous_coordinates((left, right, top, bottom))
         mean_left, mean_right, mean_top, mean_bottom = self.get_mean_coordinates()
         hand = image[int(mean_top):int(mean_bottom), int(mean_left):int(mean_right)]
-        Logger.log("params", (mean_left, mean_right, mean_top, mean_bottom))
-        Logger.log("hand shape", hand.shape)
-        hands.append(cv2.resize(hand, CLASSIFIER_INPUT_SHAPE))
+        hands.append(hand)
         return np.array(hands)
 
     def add_elem_to_previous_coordinates(self, elem):
@@ -122,8 +114,8 @@ class HandsLocalizerTracker(CNNTransformer):
         self.bbox = None
         self.counter = 0
         self.min_size = (50, 50)  # forged opencv parameter
-        self.scale_factor = 1.1     # forged opencv parameter
-        self.min_neighbors = 3      # forged opencv parameter
+        self.scale_factor = 1.1  # forged opencv parameter
+        self.min_neighbors = 3  # forged opencv parameter
         self.tracker = None
         self.fitting_with_cascades_frequency = 40
 
@@ -136,9 +128,9 @@ class HandsLocalizerTracker(CNNTransformer):
         row, col = np.where(thresholded != 0)
         left = col.min()
         right = col.max()
-        mean = (left + right)//2
+        mean = (left + right) // 2
         # img[thresholded == 255] = 0
-        img = img[:, mean - mean//2: mean + mean//2]
+        img = img[:, mean - mean // 2: mean + mean // 2]
         return img
 
     def transform(self, X, **transform_params):
@@ -170,7 +162,7 @@ class HandsLocalizerTracker(CNNTransformer):
                         self.coordinates.add_hand(hand)
                     x, y, w, h = self.coordinates.get_processed_cords()
 
-                partial_frame = frame[y:y+h, x:x+w]
+                partial_frame = frame[y:y + h, x:x + w]
                 if not HandsLocalizerTracker.is_shape_zero(partial_frame.shape):
                     bbox = (x, y, w, h)
                     self.tracker = cv2.Tracker_create("MIL")
@@ -188,7 +180,7 @@ class HandsLocalizerTracker(CNNTransformer):
         output = X.copy()
         transformed = []
         for out in output:
-            sliced = out[y:y+h, x:x+w]
+            sliced = out[y:y + h, x:x + w]
             if HandsLocalizerTracker.is_shape_zero(sliced.shape):
                 sliced = out
             thresholded = HandsLocalizerTracker.threshold_image(sliced)
@@ -230,7 +222,7 @@ class GestureClassifier(CNNTransformer):
 
         for elem in self.cache:
             Logger.log('shape cache', np.array(elem).shape)
-        inp = np.array(self.cache).transpose((0, 3, 1, 2))
+        inp = np.array(self.cache).transpose((0, 3, 1, 2)) / 255.
         prediction = self.model.predict(inp[-1:])[-1]
         self.output = prediction
         self.clear_cache()
@@ -248,43 +240,31 @@ class GestureClassifier(CNNTransformer):
 
 
 class CharPredictor(CNNTransformer):
-    __previous_predictions = to_categorical(np.random.randint(len(AsciiEncoder.AVAILABLE_CHARS), size=20),
-                                            len(AsciiEncoder.AVAILABLE_CHARS))
-
     def __init__(self, num_of_chars):
         super(CharPredictor, self).__init__()
         self.num_of_chars = num_of_chars
         self.model = self.load_model()
         self.out_key = 'chars'
 
+        self.previous_predictions = np.zeros((self.num_of_chars, len(AsciiEncoder.AVAILABLE_CHARS)))
+
     def transform(self, X, **transform_params):
         if X is None: return None
-        x_data = CharPredictor.__previous_predictions
+        x_data = self.previous_predictions
         self.output = self.model.predict(np.asarray([x_data]))[0]
+        self.clear_cache()
         return self.output
 
-    def prepare_data(self):
-        predictions = CharPredictor.__previous_predictions[:]
-        if len(predictions) >= self.num_of_chars:
-            while len(predictions) > self.num_of_chars:
-                predictions.pop(0)
-        else:
-            while len(predictions) != self.num_of_chars:
-                predictions.insert(0, 0)
-        return to_categorical(predictions, len(AsciiEncoder.AVAILABLE_CHARS))
-
-    @staticmethod
-    def add_to_previous_predictions(prediction):
-        CharPredictor.__previous_predictions = np.append(CharPredictor.__previous_predictions[1:],
-                                                         to_categorical(prediction, len(AsciiEncoder.AVAILABLE_CHARS)),
-                                                         axis=0)
+    def add_to_previous_predictions(self, prediction):
+        self.previous_predictions = np.append(self.previous_predictions[1:],
+                                              to_categorical(prediction, len(AsciiEncoder.AVAILABLE_CHARS)),
+                                              axis=0)
 
     def load_model(self):
         with open(os.path.join(CHAR_PREDICTION_FOLDER, ARCHITECTURE_JSON_NAME), 'r') as f:
             model = model_from_json(f.read())
         model.load_weights(os.path.join(CHAR_PREDICTION_FOLDER, WEIGHTS_HDF5_NAME))
         return model
-        # return CharPredictionMock.model(time_steps=self.num_of_chars, feature_length=len(AsciiEncoder.AVAILABLE_CHARS))
 
 
 class PredictionSelector(CNNTransformer):
@@ -304,6 +284,8 @@ class PredictionSelector(CNNTransformer):
             return None
         gesture_prediction = CNNTransformer.transformers[self.indices_of_transformers_to_combine[0]].output
         char_prediction = CNNTransformer.transformers[self.indices_of_transformers_to_combine[1]].output
+
+        char_predictor = CNNTransformer.transformers[self.indices_of_transformers_to_combine[1]]
         # x_data = np.asarray([[previous_transformer_output]])
         # prediction = self.model.predict(x_data)
         # prediction = x_data[0][0][0]
@@ -311,7 +293,7 @@ class PredictionSelector(CNNTransformer):
         prediction = gesture_prediction * 0.8 + char_prediction * 0.2
         # prediction = gesture_prediction
         predicted_arg = np.argmax(prediction)
-        CharPredictor.add_to_previous_predictions(predicted_arg)
+        char_predictor.add_to_previous_predictions(predicted_arg)
         prediction = np.array([prediction, char_prediction])
         self.output = prediction
         self.clear_cache()
@@ -323,7 +305,9 @@ class PredictionSelector(CNNTransformer):
             previous_transformer_output.append(CNNTransformer.transformers[index].output)
         x_data = np.asarray([[previous_transformer_output]])
         prediction = self.model.fit(x_data, y)
-        CharPredictor.add_to_previous_predictions(prediction[0][0])
+
+        char_predictor = CNNTransformer.transformers[self.indices_of_transformers_to_combine[1]]
+        char_predictor.add_to_previous_predictions(prediction[0][0])
 
     def load_model(self):
         return PredictionSelectionMock.model()
