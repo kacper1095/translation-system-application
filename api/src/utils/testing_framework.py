@@ -1,3 +1,7 @@
+import os
+
+os.environ['THEANO_FLAGS'] = 'floatX=float32,mode=FAST_RUN'
+
 import cv2
 import tqdm
 import json
@@ -28,6 +32,8 @@ class Tester(object):
 
     def load_video(self, video_path):
         print(video_path)
+        transformers = load_transformers()
+        self.transformers = transformers
         capture = cv2.VideoCapture(os.path.abspath(video_path))
         while capture.isOpened():
             ret, img = capture.read()

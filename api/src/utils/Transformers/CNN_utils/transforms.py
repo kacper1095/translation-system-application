@@ -93,6 +93,8 @@ class TensorflowHandsLocalizer(CNNTransformer):
                 self.add_elem_to_previous_coordinates((left, right, top, bottom))
         mean_left, mean_right, mean_top, mean_bottom = self.get_mean_coordinates()
         hand = image[int(mean_top):int(mean_bottom), int(mean_left):int(mean_right)]
+        Logger.log("params", (mean_left, mean_right, mean_top, mean_bottom))
+        Logger.log("hand shape", hand.shape)
         hands.append(cv2.resize(hand, CLASSIFIER_INPUT_SHAPE))
         return np.array(hands)
 
@@ -256,16 +258,9 @@ class CharPredictor(CNNTransformer):
         self.out_key = 'chars'
 
     def transform(self, X, **transform_params):
-        if len(self.cache) < CNNTransformer.CACHE_MAX_SIZE:
-            if self.frame_counter == CNNTransformer.MAX_FRAME_COUNTER:
-                self.cache.append(True)
-                self.frame_counter = 0
-            else:
-                self.frame_counter += 1
-            return None
+        if X is None: return None
         x_data = CharPredictor.__previous_predictions
         self.output = self.model.predict(np.asarray([x_data]))[0]
-        self.clear_cache()
         return self.output
 
     def prepare_data(self):
