@@ -5,6 +5,7 @@ os.environ['THEANO_FLAGS'] = 'floatX=float32,mode=FAST_RUN'
 import cv2
 import tqdm
 import json
+import datetime
 from sphinx.versioning import levenshtein_distance
 
 from pipeline import load_transformers, convert_last_output_to_ascii
@@ -12,6 +13,7 @@ from pipeline import load_transformers, convert_last_output_to_ascii
 from src.common import *
 from src.utils.Transformers.eval_transformer_pipeline import eval_transformer_pipeline
 
+TIMESTAMP = datetime.datetime.now().strftime('%H_%M_%d_%m_%y')
 
 class Tester(object):
 
@@ -44,7 +46,10 @@ class Tester(object):
 
     def test(self):
         print('Testing')
+        report_path = os.path.join(REPORTS_FOLDER, TIMESTAMP)
+        ensure_dir(report_path)
         distances = []
+        report_file_content = ['distance,true_label,predicted_label']
         video_file_paths, labels = self.load_data(os.path.join(TESTING_VIDEO_FOLDER, 'labels.txt'))
         for i, (file_name, label) in enumerate(tqdm.tqdm(zip(video_file_paths, labels))):
             video = self.load_video(os.path.join(TESTING_VIDEO_FOLDER, file_name))
@@ -57,9 +62,17 @@ class Tester(object):
                     predicted += convert_last_output_to_ascii(evaluation, number_of_predictions=1)[0]
             del video
             # predicted = self.text_transformer.transform(predicted)
-            distances.append((levenshtein_distance(label, predicted), len(label)))
+            distances.append(levenshtein_distance(label, predicted) / len(predicted))
+            report_file_content.append('{},{},{}'.format(distances[-1], label, predicted))
             print(predicted, label)
             print(distances[-1])
+
+        with open(os.path.join(report_path, 'report.csv'), 'w') as f:
+            f.write(''.join(report_file_content))
+
+        with open(os.path.join(report_path, 'means_stats.txt'), 'w') as f:
+            f.write('mean: {}\n'.format(np.mean(distances)))
+            f.write('std: {}'.format(np.std(distances)))
         return np.mean(distances)
 
 

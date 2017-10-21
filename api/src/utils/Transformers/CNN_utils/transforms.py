@@ -2,7 +2,7 @@ from __future__ import print_function
 
 from ..Transformer import Transformer
 from ...AsciiEncoder import AsciiEncoder
-from .mocks import GestureClassifierMock, CharPredictionMock, PredictionSelectionMock, HandsLocalizerMock
+from .mocks import PredictionSelectionMock
 from .metrics import f1
 
 from keras.utils.np_utils import to_categorical
@@ -71,10 +71,15 @@ class TensorflowHandsLocalizer(CNNTransformer):
     def process_output(self, image, boxes, scores):
         h, w, c = image.shape
         result_boxes = []
+        offset = 20
         for i in range(len(boxes)):
             if scores[i] > MIN_THRESHOLD_BOXES:
                 ymin, xmin, ymax, xmax = boxes[i]
                 left, right, top, bottom = (xmin * w, xmax * w, ymin * h, ymax * h)
+                # left = max(0, left - offset)
+                # right = min(w - 1, right + offset)
+                # top = min(0, top - offset)
+                # bottom = max(h - 1, bottom + offset)
                 result_boxes.append((left, right, top, bottom, scores[i]))
         return np.array(result_boxes)
 
@@ -220,51 +225,24 @@ class GestureClassifier(CNNTransformer):
                 self.frame_counter += 1
             return None
 
-        for elem in self.cache:
-            Logger.log('shape cache', np.array(elem).shape)
-        inp = np.array(self.cache).transpose((0, 3, 1, 2)) / 255.
-        prediction = self.model.predict(inp[-1:])[-1]
+        inp = X[-1].transpose((2, 0, 1)) / 255.
+        prediction = self.model.predict(np.array([inp]))[-1]
+        Logger.log('img', inp)
+        Logger.log('prediction', prediction)
         self.output = prediction
         self.clear_cache()
         return self.output
 
     def load_model(self):
         # with open(os.path.join(GESTURE_PREDICTION_FOLDER, ARCHITECTURE_JSON_NAME)) as f:
-        #     model = model_from_json(f.read())
+        #     model = model_from_json(f.read(),
+        #                             custom_objects={'f1': f1})
         # model.load_weights(os.path.join(GESTURE_PREDICTION_FOLDER, WEIGHTS_H5_NAME))
         model = load_model(os.path.join(GESTURE_PREDICTION_FOLDER, WEIGHTS_H5_NAME),
                            custom_objects={'f1': f1})
         return model
         # return load_model(os.path.join(GESTURE_PREDICTION_FOLDER, '90per.h5'))
         # return GestureClassifierMock.model()
-
-
-class CharPredictor(CNNTransformer):
-    def __init__(self, num_of_chars):
-        super(CharPredictor, self).__init__()
-        self.num_of_chars = num_of_chars
-        self.model = self.load_model()
-        self.out_key = 'chars'
-
-        self.previous_predictions = np.zeros((self.num_of_chars, len(AsciiEncoder.AVAILABLE_CHARS)))
-
-    def transform(self, X, **transform_params):
-        if X is None: return None
-        x_data = self.previous_predictions
-        self.output = self.model.predict(np.asarray([x_data]))[0]
-        self.clear_cache()
-        return self.output
-
-    def add_to_previous_predictions(self, prediction):
-        self.previous_predictions = np.append(self.previous_predictions[1:],
-                                              to_categorical(prediction, len(AsciiEncoder.AVAILABLE_CHARS)),
-                                              axis=0)
-
-    def load_model(self):
-        with open(os.path.join(CHAR_PREDICTION_FOLDER, ARCHITECTURE_JSON_NAME), 'r') as f:
-            model = model_from_json(f.read())
-        model.load_weights(os.path.join(CHAR_PREDICTION_FOLDER, WEIGHTS_HDF5_NAME))
-        return model
 
 
 class PredictionSelector(CNNTransformer):
@@ -286,14 +264,10 @@ class PredictionSelector(CNNTransformer):
         char_prediction = CNNTransformer.transformers[self.indices_of_transformers_to_combine[1]].output
 
         char_predictor = CNNTransformer.transformers[self.indices_of_transformers_to_combine[1]]
-        # x_data = np.asarray([[previous_transformer_output]])
-        # prediction = self.model.predict(x_data)
-        # prediction = x_data[0][0][0]
         gesture_prediction = np.insert(gesture_prediction, 0, [0.0])
         prediction = gesture_prediction * 0.8 + char_prediction * 0.2
-        # prediction = gesture_prediction
         predicted_arg = np.argmax(prediction)
-        char_predictor.add_to_previous_predictions(predicted_arg)
+        char_predictor.add_to_context(int(predicted_arg))
         prediction = np.array([prediction, char_prediction])
         self.output = prediction
         self.clear_cache()

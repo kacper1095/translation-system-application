@@ -3,7 +3,7 @@ import sklearn.preprocessing as skl_preproc
 
 
 class AsciiEncoder:
-    AVAILABLE_CHARS = ' ' + string.digits + string.ascii_lowercase
+    AVAILABLE_CHARS = ' ' + string.ascii_lowercase
 
     @staticmethod
     def convert_characters_to_indexes(characters_array):

@@ -36,3 +36,9 @@ PATH_TO_CKPT_BOXING = os.path.join(HANDS_SEGMENTATION_FOLDER, 'frozen_inference_
 BOXING_INPUT_TENSOR_NAME = 'image_tensor:0'
 BOXING_OUTPUT_TENSOR_NAME = 'detection_boxes:0,detection_scores:0'
 MIN_THRESHOLD_BOXES = 0.5
+
+REPORTS_FOLDER = 'reports'
+
+def ensure_dir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
