@@ -239,7 +239,7 @@ class GestureClassifier(CNNTransformer):
         #                             custom_objects={'f1': f1})
         # model.load_weights(os.path.join(GESTURE_PREDICTION_FOLDER, WEIGHTS_H5_NAME))
         model = load_model(os.path.join(GESTURE_PREDICTION_FOLDER, WEIGHTS_H5_NAME),
-                           custom_objects={'f1': f1})
+                           custom_objects={'f1': f1 })
         return model
         # return load_model(os.path.join(GESTURE_PREDICTION_FOLDER, '90per.h5'))
         # return GestureClassifierMock.model()
