@@ -22,6 +22,26 @@ import numpy as np
 import os
 import cv2
 
+DICTIONARY_CLASS_WEIGHTS = None
+
+
+def assign_class_weights():
+    global DICTIONARY_CLASS_WEIGHTS
+
+    letters = AsciiEncoder.AVAILABLE_CHARS
+    DICTIONARY_CLASS_WEIGHTS = np.array([0.3] * len(letters))
+    DICTIONARY_CLASS_WEIGHTS[letters.index(' ')] = 0.7
+    DICTIONARY_CLASS_WEIGHTS[letters.index('j')] = 0.7
+    DICTIONARY_CLASS_WEIGHTS[letters.index('z')] = 0.7
+
+assign_class_weights()
+
+
+def softmax(x):
+    """Compute softmax values for each sets of scores in x."""
+    e_x = np.exp(x - np.max(x))
+    return e_x / e_x.sum()
+
 
 class CNNTransformer(Transformer):
     transformers = []
@@ -71,15 +91,15 @@ class TensorflowHandsLocalizer(CNNTransformer):
     def process_output(self, image, boxes, scores):
         h, w, c = image.shape
         result_boxes = []
-        offset = 20
+        offset = 10
         for i in range(len(boxes)):
             if scores[i] > MIN_THRESHOLD_BOXES:
                 ymin, xmin, ymax, xmax = boxes[i]
                 left, right, top, bottom = (xmin * w, xmax * w, ymin * h, ymax * h)
-                # left = max(0, left - offset)
-                # right = min(w - 1, right + offset)
-                # top = min(0, top - offset)
-                # bottom = max(h - 1, bottom + offset)
+                left = max(0, left - offset)
+                right = min(w - 1, right + offset)
+                top = max(0, top - offset - 20)
+                bottom = min(h - 1, bottom + offset + 20)
                 result_boxes.append((left, right, top, bottom, scores[i]))
         return np.array(result_boxes)
 
@@ -197,7 +217,6 @@ class HandsLocalizerTracker(CNNTransformer):
             h, w, _ = out.shape
             sliced = out[int(h * 0.2):, int(w * 0.2):]
             scaled = cv2.resize(sliced, CLASSIFIER_INPUT_SHAPE, interpolation=cv2.INTER_LINEAR)
-            Logger.log_img(scaled)
             transformed.append(scaled)
         self.output = np.asarray(transformed)
         return self.output
@@ -226,8 +245,8 @@ class GestureClassifier(CNNTransformer):
             return None
 
         inp = X[-1].transpose((2, 0, 1)) / 255.
+        Logger.log_img(inp.transpose((1, 2, 0)) * 255.)
         prediction = self.model.predict(np.array([inp]))[-1]
-        Logger.log('img', inp)
         Logger.log('prediction', prediction)
         self.output = prediction
         self.clear_cache()
@@ -264,8 +283,11 @@ class PredictionSelector(CNNTransformer):
         char_prediction = CNNTransformer.transformers[self.indices_of_transformers_to_combine[1]].output
 
         char_predictor = CNNTransformer.transformers[self.indices_of_transformers_to_combine[1]]
-        gesture_prediction = np.insert(gesture_prediction, 0, [0.0])
-        prediction = gesture_prediction * 0.8 + char_prediction * 0.2
+        gesture_prediction = np.insert(gesture_prediction, 0, [0.0])  # inserting for *space* value
+        gesture_prediction = np.insert(gesture_prediction, 10, [0.0]) # inserting for j value
+        gesture_prediction = np.insert(gesture_prediction, 26, [0.0]) # inserting for z value
+        prediction = gesture_prediction * (1.0 - DICTIONARY_CLASS_WEIGHTS) + char_prediction * DICTIONARY_CLASS_WEIGHTS
+        prediction = softmax(prediction)
         predicted_arg = np.argmax(prediction)
         char_predictor.add_to_context(int(predicted_arg))
         prediction = np.array([prediction, char_prediction])

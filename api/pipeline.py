@@ -1,7 +1,10 @@
 from PIL import Image
 from binascii import a2b_base64
+# from src.utils.Transformers.CNN_utils.transforms import (
+#     GestureClassifier, PredictionSelector, CNNTransformer, HandsLocalizerTracker, TensorflowHandsLocalizer
+# )
 from src.utils.Transformers.CNN_utils.transforms import (
-    GestureClassifier, PredictionSelector, CNNTransformer, HandsLocalizerTracker, TensorflowHandsLocalizer
+    PredictionSelector, CNNTransformer, HandsLocalizerTracker, TensorflowHandsLocalizer
 )
 from src.utils.Transformers.basic_morpho_transforms import (
     Resizer, BoxHands, Normalizer, BGR2HSV
@@ -11,6 +14,7 @@ from src.utils.Transformers.eval_transformer_pipeline import eval_transformer_pi
 from src.utils.AsciiEncoder import AsciiEncoder
 from src.utils.Logger import Logger
 from dictionary_model import CharPredictor
+from gesture_classifying_model import GestureClassifier
 from src.common import DEST_SHAPE, CLASSIFIER_INPUT_SHAPE
 import io
 import cv2

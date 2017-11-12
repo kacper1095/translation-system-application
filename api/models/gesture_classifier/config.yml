@@ -1,0 +1,4 @@
+MODEL_URL: 'https://github.com/kacper1095/gesture_classifying_model/releases/download/0.1/weights.h5'
+FRAMES_TO_OMMIT: 3
+MAX_CONTENT_SIZE: 5
+MODEL_INFO: {image_input_shape: [3, 64, 64]}

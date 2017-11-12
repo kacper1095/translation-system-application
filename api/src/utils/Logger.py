@@ -19,6 +19,7 @@ class Logger(object):
 
     @staticmethod
     def log_img(img):
+        img = img[:]
         if img.max() < 127:
             img *= 255
         cv2.imwrite(os.path.join('tmp', Logger.get_time_stamp() + '.png'), img)

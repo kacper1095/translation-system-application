@@ -40,6 +40,17 @@ let initialPrediction = false;
 
 const DEBUG = true;
 
+
+var socker = new WebSocket("ws://localhost:5000/echo");
+socker.onopen = function() {
+  console.log("Socket opened");
+}
+
+socker.onmessage = function(msg) {
+  processResponse(JSON.parse(msg.data));
+  predicted = true;
+}
+
 let videoConstraints = {
   video: {
     optional: [
@@ -79,28 +90,8 @@ function scrollToBottom(scrollDuration, element) {
 }
 
 function classifyLetters(){
-  if (cameraShots.length > 0) {
-    console.log(cameraShots.length);
-    $.ajax({
-      type: "POST",
-      url: "http://localhost:5000/",
-      // async: false,
-      data: {'img_array': JSON.stringify(cameraShots), 'debug': DEBUG},
-      success: function(response) {
-        if (!initialPrediction) {
-          initialPrediction = true;
-        } else {
-          processResponse(response)
-        }
-        predicted = true;
-      },
-      error: function(msg) {
-        console.log(msg);
-        setTimeout(function() {
-          classifyLetters();
-        }, 50)
-      }
-    });
+  if (cameraShots.length > 0 && socker.readyState === socker.OPEN) {
+    socker.send(JSON.stringify({"img_array": JSON.stringify(cameraShots), "debug": DEBUG}))
   }
 }
 

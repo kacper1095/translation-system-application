@@ -5,7 +5,7 @@ os.environ['THEANO_FLAGS'] = 'floatX=float32,mode=FAST_RUN'
 from flask import Flask
 from flask_restful import Resource, Api, request
 from flask_cors import CORS
-# from flask_sockets import Sockets
+from flask_sockets import Sockets
 from pipeline import evaluate, load_transformers, convert_last_output_to_ascii, convert_hand_tracker_output_to_readable
 from src.utils.Logger import Logger
 from urllib.parse import quote
@@ -16,8 +16,12 @@ import base64
 import matplotlib.pyplot as plt
 from io import BytesIO
 
+from geventwebsocket.handler import WebSocketHandler
+from gevent.pywsgi import WSGIServer
+
 app = Flask(__name__)
 CORS(app, origins='http://localhost:8000')
+sockets = Sockets(app)
 api = Api(app)
 
 COMBINED_PREDICTION_INDEX = 0
@@ -27,6 +31,40 @@ DICTIONARY_PREDICTION_INDEX = 1
 def clear_log():
     if os.path.exists("log.txt"):
         os.remove("log.txt")
+
+
+@app.route('/echo')
+def echo():
+    if request.environ.get('wsgi.websocket'):
+        ws = request.environ['wsgi.websocket']
+        while True:
+            message = ws.receive()
+            data = json.loads(str(message))
+
+            img_array_json = data['img_array']
+            debug = data['debug']
+            img_array = json.loads(img_array_json)
+            evaluated = evaluate(img_array)
+            ascii_output_from_last_layer = convert_last_output_to_ascii(evaluated['prediction_selection'], which_selection=COMBINED_PREDICTION_INDEX)
+            if debug:
+                localized_hands_output = Classifier.convert_img(
+                    convert_hand_tracker_output_to_readable(evaluated['hands'][-1]))
+                predicted_chars = Classifier.generate_plot(evaluated['chars'], 'chars')
+                classified_gestures = Classifier.generate_plot(evaluated['gesture'], 'gesture')
+                finally_predicted = Classifier.generate_plot(evaluated['prediction_selection'][COMBINED_PREDICTION_INDEX] if evaluated['prediction_selection'] is not None else None, 'selection')
+                dictionary_prediction = convert_last_output_to_ascii(evaluated['prediction_selection'], which_selection=DICTIONARY_PREDICTION_INDEX)[0]
+                output = {
+                    'result': ascii_output_from_last_layer[0],
+                    'resized': localized_hands_output,
+                    'predictedChars': predicted_chars,
+                    'classifiedGestures': classified_gestures,
+                    'finallyPredicted': finally_predicted,
+                    'nearestPredictions': ascii_output_from_last_layer,
+                    'dictionaryPrediction': dictionary_prediction
+                }
+            else:
+                output = {'result': ascii_output_from_last_layer[0]}
+            ws.send(json.dumps(output))
 
 
 @api.resource('/')
@@ -84,6 +122,9 @@ class Classifier(Resource):
             else:
                 return {'result': ascii_output_from_last_layer[0]}
 
-clear_log()
-load_transformers()
-app.run()
+if __name__ == '__main__':
+    clear_log()
+    load_transformers()
+    # app.run()
+    http_server = WSGIServer(('', 5000), app, handler_class=WebSocketHandler, log=app.logger)
+    http_server.serve_forever()
