@@ -1,0 +1,5 @@
+flask_sockets
+theano==0.9.0
+tensorflow==1.2.2
+imutils
+keras==1.2.2
