@@ -48,7 +48,7 @@ def echo():
             ascii_output_from_last_layer = convert_last_output_to_ascii(evaluated['prediction_selection'], which_selection=COMBINED_PREDICTION_INDEX)
             if debug:
                 localized_hands_output = Classifier.convert_img(
-                    convert_hand_tracker_output_to_readable(evaluated['hands'][-1]))
+                    convert_hand_tracker_output_to_readable(evaluated['hands'][-1])) if evaluated['hands'] is not None else None
                 predicted_chars = Classifier.generate_plot(evaluated['chars'], 'chars')
                 classified_gestures = Classifier.generate_plot(evaluated['gesture'], 'gesture')
                 finally_predicted = Classifier.generate_plot(evaluated['prediction_selection'][COMBINED_PREDICTION_INDEX] if evaluated['prediction_selection'] is not None else None, 'selection')

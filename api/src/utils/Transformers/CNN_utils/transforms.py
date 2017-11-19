@@ -16,12 +16,17 @@ from src.utils.Logger import Logger
 
 from .utils import TensorflowWrapper
 from .helpers import Coordinates
+from keras.models import Model
+from keras.layers import Input, Convolution2D, BatchNormalization, MaxPooling2D, Flatten, Dense, Lambda, Dropout, Activation
+import keras.backend as K
 
 import sys
 import numpy as np
 import os
 import cv2
+import time
 
+TIME_INTERVAL = 5
 DICTIONARY_CLASS_WEIGHTS = None
 
 
@@ -77,8 +82,7 @@ class TensorflowHandsLocalizer(CNNTransformer):
         prediction_boxes, prediction_scores = self.model.predict(inp)
         boxes_with_scores = self.process_output(input_image, prediction_boxes[0], prediction_scores[0])
         if len(boxes_with_scores) == 0 and len(self.previous_coordinates) == 0:
-            self.output = np.array(X)
-            return self.output
+            return None
         else:
             hand_boxes = self.cut_hands(input_image, boxes_with_scores, num_of_boxes=1)
             self.output = np.array([hand_boxes[0]])
@@ -234,16 +238,16 @@ class GestureClassifier(CNNTransformer):
         super(GestureClassifier, self).__init__()
         self.model = self.load_model()
         self.out_key = 'gesture'
+        self.time_interval = TIME_INTERVAL
+        self.previous_time = time.time()
 
     def transform(self, X, **transform_params):
-        if len(self.cache) < CNNTransformer.CACHE_MAX_SIZE:
-            if self.frame_counter == CNNTransformer.MAX_FRAME_COUNTER:
-                self.cache.append(X[-1])
-                self.frame_counter = 0
-            else:
-                self.frame_counter += 1
+        if X is None:
             return None
-
+        # time_dif = time.time() - self.previous_time
+        # if time_dif < self.time_interval:
+        #     return None
+        self.previous_time = time.time()
         inp = X[-1].transpose((2, 0, 1)) / 255.
         Logger.log_img(inp.transpose((1, 2, 0)) * 255.)
         prediction = self.model.predict(np.array([inp]))[-1]
@@ -270,14 +274,14 @@ class PredictionSelector(CNNTransformer):
         self.model = self.load_model()
         self.indices_of_transformers_to_combine = indices_of_transformers_to_combine
         self.out_key = 'prediction_selection'
+        self.time_interval = TIME_INTERVAL
+        self.previous_time = time.time()
 
     def transform(self, X, **transform_params):
-        if len(self.cache) < CNNTransformer.CACHE_MAX_SIZE:
-            if self.frame_counter == CNNTransformer.MAX_FRAME_COUNTER:
-                self.cache.append(True)
-                self.frame_counter = 0
-            else:
-                self.frame_counter += 1
+        if X is None:
+            return None
+        time_dif = time.time() - self.previous_time
+        if time_dif < self.time_interval:
             return None
         gesture_prediction = CNNTransformer.transformers[self.indices_of_transformers_to_combine[0]].output
         char_prediction = CNNTransformer.transformers[self.indices_of_transformers_to_combine[1]].output
@@ -307,3 +311,86 @@ class PredictionSelector(CNNTransformer):
 
     def load_model(self):
         return PredictionSelectionMock.model()
+
+
+class ChangedPositionDetector(CNNTransformer):
+    def __init__(self):
+        super(ChangedPositionDetector, self).__init__()
+        self.model = self.load_model()
+        self.out_key = 'change_detection'
+        self.last_frame = None
+        self.last_prediction = None
+
+    def transform(self, X, **transform_params):
+        if X is None:
+            return None
+        inp = X[-1].transpose((2, 0, 1)) / 255.
+        self.output = None
+        if self.last_frame is not None:
+            prediction = self.model.predict([np.array([self.last_frame]), np.array([inp])])[-1]
+            prediction = np.argmax(prediction)
+            if self.last_prediction and not prediction:
+                self.output = X
+                self.last_prediction = prediction
+            else:
+                self.last_prediction = prediction
+                print(prediction)
+                self.output = None
+        self.last_frame = inp
+        return self.output
+
+    def load_model(self):
+        def bn_convo(x, filters, kernel_size, use_dropout=False):
+            x = Convolution2D(filters, kernel_size, kernel_size,
+                              border_mode='same', init='he_normal')(x)
+            x = BatchNormalization(axis=1)(x)
+            x = Activation('relu')(x)
+            if use_dropout:
+                x = Dropout(0.0)(x)
+            return x
+
+        def base_model():
+            inputs = Input((3, 64, 64))
+            filters = [32, 64, 128, 128]
+            repetitions = [2, 2, 3, 3]
+
+            x = Convolution2D(16, 5, 5, init='he_normal',
+                              border_mode='same', subsample=(2, 2))(inputs)
+
+            for index, (f, r) in enumerate(zip(filters, repetitions)):
+                for _ in range(r):
+                    x = bn_convo(x, f, 3, use_dropout=True)
+                if index == len(filters) - 1:
+                    break
+                x = MaxPooling2D((3, 3), (2, 2))(x)
+
+            x = Flatten()(x)
+            model = Model(inputs, x, '3_convo')
+            return model
+
+        def euclidean_distance(vects):
+            x, y = vects
+            return K.sqrt(K.maximum(K.sum(K.square(x - y), axis=1, keepdims=True), K.epsilon()))
+
+        def eucl_dist_output_shape(shapes):
+            shape1, shape2 = shapes
+            return shape1[0], 1
+
+        def create_model():
+            inputs_1 = Input((3, 64, 64))
+            inputs_2 = Input((3, 64, 64))
+            base = base_model()
+            x_1 = base(inputs_1)
+            x_2 = base(inputs_2)
+
+            x = Lambda(euclidean_distance, output_shape=eucl_dist_output_shape)([x_1, x_2])
+            x = Dense(128, activation='relu')(x)
+            x = Dropout(0.2)(x)
+            x = Dense(2, activation='softmax')(x)
+            return Model([inputs_1, inputs_2], x)
+        model = create_model()
+        model.load_weights(os.path.join('models', 'change_prediction', 'weights.h5'))
+        return model
+        # return load_model(os.path.join(GESTURE_PREDICTION_FOLDER, '90per.h5'))
+        # return GestureClassifierMock.model()
+

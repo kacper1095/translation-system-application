@@ -15,8 +15,8 @@ from src.utils.Transformers.eval_transformer_pipeline import eval_transformer_pi
 
 TIMESTAMP = datetime.datetime.now().strftime('%H_%M_%d_%m_%y')
 
-class Tester(object):
 
+class Tester(object):
     def __init__(self):
         transformers = load_transformers()
         self.transformers = transformers
@@ -39,6 +39,7 @@ class Tester(object):
         capture = cv2.VideoCapture(os.path.abspath(video_path))
         while capture.isOpened():
             ret, img = capture.read()
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             if not ret:
                 break
             yield np.array(img)
@@ -54,6 +55,8 @@ class Tester(object):
         for i, (file_name, label) in enumerate(tqdm.tqdm(zip(video_file_paths, labels))):
             video = self.load_video(os.path.join(TESTING_VIDEO_FOLDER, file_name))
             predicted = ''
+            import pdb
+            pdb.set_trace()
             for chunk in video:
                 if chunk is None:
                     break
@@ -62,10 +65,9 @@ class Tester(object):
                     predicted += convert_last_output_to_ascii(evaluation, number_of_predictions=1)[0]
             del video
             # predicted = self.text_transformer.transform(predicted)
-            distances.append(levenshtein_distance(label, predicted) / len(predicted))
+            distances.append(levenshtein_distance(label, predicted))
             report_file_content.append('{},{},{}'.format(distances[-1], label, predicted))
-            print(predicted, label)
-            print(distances[-1])
+            print('Predicted: {}\nExpected: {}\nDistance: {}'.format(predicted, label, distances[-1]))
 
         with open(os.path.join(report_path, 'report.csv'), 'w') as f:
             f.write(''.join(report_file_content))

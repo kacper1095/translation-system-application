@@ -16,6 +16,8 @@ class Resizer(Transformer):
         self.out_key = 'resize'
 
     def transform(self, X, **transform_params):
+        if X is None:
+            return None
         if len(X.shape) == 4:
             result = []
             for i, img in enumerate(X):
@@ -70,6 +72,8 @@ class BoxHands(Transformer):
         self.out_key = 'boxed'
 
     def transform(self, X, **transform_params):
+        if X is None:
+            return None
         if type(X) == list or len(X.shape) == 4:
             grayscaled = []
             for sample in X:
