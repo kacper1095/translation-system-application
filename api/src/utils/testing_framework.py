@@ -51,14 +51,16 @@ class Tester(object):
         report_file_content = ['distance,true_label,predicted_label']
         video_file_paths, labels = self.load_data(os.path.join(TESTING_VIDEO_FOLDER, 'labels.txt'))
         for i, (file_name, label) in enumerate(tqdm.tqdm(zip(video_file_paths, labels))):
-            video = self.load_video(os.path.join(TESTING_VIDEO_FOLDER, file_name))
-            predicted = ''
-            for chunk in video:
-                evaluation = eval_transformer_pipeline(np.array([chunk]), self.transformers)
-                if evaluation is not None:
-                    predicted += convert_last_output_to_ascii(evaluation, number_of_predictions=1)[0]
-            del video
             # predicted = self.text_transformer.transform(predicted)
+            predicted = self.__get_letters_from_video_path(os.path.join(TESTING_VIDEO_FOLDER, file_name))
+            predicted_bgr = self.__get_letters_from_video_path_in_bgr(os.path.join(TESTING_VIDEO_FOLDER, file_name))
+
+            orig_lev_distance = levenshtein_distance(label, predicted)
+            bgr_lev_distance = levenshtein_distance(label, predicted_bgr)
+
+            if bgr_lev_distance < orig_lev_distance:
+                predicted = predicted_bgr
+
             distances.append(levenshtein_distance(label, predicted))
             report_file_content.append('{},{},{}'.format(distances[-1], label, predicted))
             print('\nPredicted: {}\nExpected: {}\nDistance: {}'.format(predicted, label, distances[-1]))
@@ -70,6 +72,27 @@ class Tester(object):
             f.write('mean: {}\n'.format(np.mean(distances)))
             f.write('std: {}'.format(np.std(distances)))
         return np.mean(distances)
+
+    def __get_letters_from_video_path(self, video_path):
+        video = self.load_video(video_path)
+        predicted = ''
+        for chunk in video:
+            evaluation = eval_transformer_pipeline(np.array([chunk]), self.transformers)
+            if evaluation is not None:
+                predicted += convert_last_output_to_ascii(evaluation, number_of_predictions=1)[0]
+        del video
+        return predicted
+
+    def __get_letters_from_video_path_in_bgr(self, video_path):
+        video = self.load_video(video_path)
+        predicted = ''
+        for chunk in video:
+            chunk = cv2.cvtColor(chunk, cv2.COLOR_BGR2RGB)
+            evaluation = eval_transformer_pipeline(np.array([chunk]), self.transformers)
+            if evaluation is not None:
+                predicted += convert_last_output_to_ascii(evaluation, number_of_predictions=1)[0]
+        del video
+        return predicted
 
 
 if __name__ == '__main__':

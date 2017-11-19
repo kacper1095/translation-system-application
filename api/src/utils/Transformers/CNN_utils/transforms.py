@@ -237,10 +237,16 @@ class GestureClassifier(CNNTransformer):
         super(GestureClassifier, self).__init__()
         self.model = self.load_model()
         self.out_key = 'gesture'
+        self.time_interval = TIME_INTERVAL
+        self.previous_time = time.time()
 
     def transform(self, X, **transform_params):
         if X is None:
             return None
+        # time_dif = time.time() - self.previous_time
+        # if time_dif < self.time_interval:
+        #     return None
+        self.previous_time = time.time()
         inp = X[-1].transpose((2, 0, 1)) / 255.
         Logger.log_img(inp.transpose((1, 2, 0)) * 255.)
         prediction = self.model.predict(np.array([inp]))[-1]
