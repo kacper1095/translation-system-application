@@ -13,6 +13,7 @@ from src.common import (
     CUSTOM_PALM_CASCADE, PATH_TO_CKPT_BOXING, BOXING_INPUT_TENSOR_NAME, BOXING_OUTPUT_TENSOR_NAME, MIN_THRESHOLD_BOXES
 )
 from src.utils.Logger import Logger
+from src.common import CLASSIFIER_INPUT_SHAPE
 
 from .utils import TensorflowWrapper
 from .helpers import Coordinates
@@ -25,6 +26,9 @@ import numpy as np
 import os
 import cv2
 import time
+
+from skimage.feature import hog
+from skimage import color
 
 TIME_INTERVAL = 5
 DICTIONARY_CLASS_WEIGHTS = None
@@ -233,12 +237,13 @@ class HandsLocalizerTracker(CNNTransformer):
 
 
 class GestureClassifier(CNNTransformer):
-    def __init__(self):
+    def __init__(self, use_hog=False):
         super(GestureClassifier, self).__init__()
         self.model = self.load_model()
         self.out_key = 'gesture'
         self.time_interval = TIME_INTERVAL
         self.previous_time = time.time()
+        self.use_hog = use_hog
 
     def transform(self, X, **transform_params):
         if X is None:
@@ -247,13 +252,23 @@ class GestureClassifier(CNNTransformer):
         # if time_dif < self.time_interval:
         #     return None
         self.previous_time = time.time()
-        inp = X[-1].transpose((2, 0, 1)) / 255.
-        Logger.log_img(inp.transpose((1, 2, 0)) * 255.)
+        inp = X[-1]
+        if self.use_hog:
+            inp = self.prepare_image(inp)
+        else:
+            inp = inp.transpose((2, 0, 1)) / 255.
+            Logger.log_img(inp.transpose((1, 2, 0)) * 255.)
         prediction = self.model.predict(np.array([inp]))[-1]
         Logger.log('prediction', prediction)
         self.output = prediction
         self.clear_cache()
         return self.output
+
+    def prepare_image(self, img):
+        img = cv2.resize(img, (CLASSIFIER_INPUT_SHAPE[0], CLASSIFIER_INPUT_SHAPE[1]))
+        img = color.rgb2gray(img)
+        features = hog(img, 8, pixels_per_cell=(8, 8), cells_per_block=(3, 3), visualise=False)
+        return features
 
     def load_model(self):
         # with open(os.path.join(GESTURE_PREDICTION_FOLDER, ARCHITECTURE_JSON_NAME)) as f:
