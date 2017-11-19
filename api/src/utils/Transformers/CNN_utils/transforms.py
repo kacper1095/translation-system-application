@@ -90,20 +90,19 @@ class TensorflowHandsLocalizer(CNNTransformer):
 
     def load_model(self):
         return TensorflowWrapper(PATH_TO_CKPT_BOXING, BOXING_INPUT_TENSOR_NAME, BOXING_OUTPUT_TENSOR_NAME)
-        # return HandsLocalizerMock.model()
 
     def process_output(self, image, boxes, scores):
         h, w, c = image.shape
         result_boxes = []
-        offset = 10
+        offset = 3
         for i in range(len(boxes)):
             if scores[i] > MIN_THRESHOLD_BOXES:
                 ymin, xmin, ymax, xmax = boxes[i]
                 left, right, top, bottom = (xmin * w, xmax * w, ymin * h, ymax * h)
                 left = max(0, left - offset)
-                right = min(w - 1, right + offset)
-                top = max(0, top - offset - 20)
-                bottom = min(h - 1, bottom + offset + 20)
+                right = min(w - 1, right + offset * 2)
+                top = max(0, top - offset)
+                bottom = min(h - 1, bottom + offset * 2)
                 result_boxes.append((left, right, top, bottom, scores[i]))
         return np.array(result_boxes)
 
@@ -238,16 +237,10 @@ class GestureClassifier(CNNTransformer):
         super(GestureClassifier, self).__init__()
         self.model = self.load_model()
         self.out_key = 'gesture'
-        self.time_interval = TIME_INTERVAL
-        self.previous_time = time.time()
 
     def transform(self, X, **transform_params):
         if X is None:
             return None
-        # time_dif = time.time() - self.previous_time
-        # if time_dif < self.time_interval:
-        #     return None
-        self.previous_time = time.time()
         inp = X[-1].transpose((2, 0, 1)) / 255.
         Logger.log_img(inp.transpose((1, 2, 0)) * 255.)
         prediction = self.model.predict(np.array([inp]))[-1]
@@ -319,14 +312,17 @@ class ChangedPositionDetector(CNNTransformer):
         self.model = self.load_model()
         self.out_key = 'change_detection'
         self.last_frame = None
-        self.last_prediction = None
+        self.last_prediction = 1.0
+        self.frame_interval = 5
+        self.interval_counter = 0
 
     def transform(self, X, **transform_params):
         if X is None:
             return None
         inp = X[-1].transpose((2, 0, 1)) / 255.
         self.output = None
-        if self.last_frame is not None:
+        self.interval_counter += 1
+        if self.last_frame is not None and self.interval_counter > 0 and self.interval_counter % self.frame_interval == 0:
             prediction = self.model.predict([np.array([self.last_frame]), np.array([inp])])[-1]
             prediction = np.argmax(prediction)
             if self.last_prediction and not prediction:
@@ -334,8 +330,8 @@ class ChangedPositionDetector(CNNTransformer):
                 self.last_prediction = prediction
             else:
                 self.last_prediction = prediction
-                print(prediction)
                 self.output = None
+            self.interval_counter = 0
         self.last_frame = inp
         return self.output
 

@@ -6,6 +6,7 @@ import cv2
 import tqdm
 import json
 import datetime
+import skvideo.io
 from sphinx.versioning import levenshtein_distance
 
 from pipeline import load_transformers, convert_last_output_to_ascii
@@ -36,14 +37,11 @@ class Tester(object):
         print(video_path)
         transformers = load_transformers()
         self.transformers = transformers
-        capture = cv2.VideoCapture(os.path.abspath(video_path))
-        while capture.isOpened():
-            ret, img = capture.read()
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            if not ret:
-                break
-            yield np.array(img)
-        capture.release()
+        capture = skvideo.io.vread(os.path.abspath(video_path))
+        for frame in capture:
+            # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = frame.astype(np.float32)
+            yield np.array(frame)
 
     def test(self):
         print('Testing')
@@ -55,11 +53,7 @@ class Tester(object):
         for i, (file_name, label) in enumerate(tqdm.tqdm(zip(video_file_paths, labels))):
             video = self.load_video(os.path.join(TESTING_VIDEO_FOLDER, file_name))
             predicted = ''
-            import pdb
-            pdb.set_trace()
             for chunk in video:
-                if chunk is None:
-                    break
                 evaluation = eval_transformer_pipeline(np.array([chunk]), self.transformers)
                 if evaluation is not None:
                     predicted += convert_last_output_to_ascii(evaluation, number_of_predictions=1)[0]
@@ -67,7 +61,7 @@ class Tester(object):
             # predicted = self.text_transformer.transform(predicted)
             distances.append(levenshtein_distance(label, predicted))
             report_file_content.append('{},{},{}'.format(distances[-1], label, predicted))
-            print('Predicted: {}\nExpected: {}\nDistance: {}'.format(predicted, label, distances[-1]))
+            print('\nPredicted: {}\nExpected: {}\nDistance: {}'.format(predicted, label, distances[-1]))
 
         with open(os.path.join(report_path, 'report.csv'), 'w') as f:
             f.write(''.join(report_file_content))
