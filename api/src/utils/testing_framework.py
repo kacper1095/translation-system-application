@@ -15,12 +15,14 @@ from src.common import *
 from src.utils.Transformers.eval_transformer_pipeline import eval_transformer_pipeline
 
 TIMESTAMP = datetime.datetime.now().strftime('%H_%M_%d_%m_%y')
+SAVE_OUTPUT_PATH = os.path.join(REPORTS_FOLDER, TIMESTAMP, 'outputs')
 
 
 class Tester(object):
-    def __init__(self):
+    def __init__(self, transformer_index_to_save_output=-1):
         transformers = load_transformers()
         self.transformers = transformers
+        self.transformer_index_to_save_output = transformer_index_to_save_output
         self.text_transformer = None
 
     def load_data(self, label_path):
@@ -39,7 +41,7 @@ class Tester(object):
         self.transformers = transformers
         capture = skvideo.io.vread(os.path.abspath(video_path))
         for frame in capture:
-            # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame = frame.astype(np.float32)
             yield np.array(frame)
 
@@ -53,17 +55,18 @@ class Tester(object):
         for i, (file_name, label) in enumerate(tqdm.tqdm(zip(video_file_paths, labels))):
             # predicted = self.text_transformer.transform(predicted)
             predicted = self.__get_letters_from_video_path(os.path.join(TESTING_VIDEO_FOLDER, file_name))
-            predicted_bgr = self.__get_letters_from_video_path_in_bgr(os.path.join(TESTING_VIDEO_FOLDER, file_name))
 
-            orig_lev_distance = levenshtein_distance(label, predicted)
-            bgr_lev_distance = levenshtein_distance(label, predicted_bgr)
-
-            if bgr_lev_distance < orig_lev_distance:
-                predicted = predicted_bgr
-
-            distances.append(levenshtein_distance(label, predicted))
-            report_file_content.append('{},{},{}'.format(distances[-1], label, predicted))
-            print('\nPredicted: {}\nExpected: {}\nDistance: {}'.format(predicted, label, distances[-1]))
+            # predicted_bgr = self.__get_letters_from_video_path_in_bgr(os.path.join(TESTING_VIDEO_FOLDER, file_name))
+            #
+            # orig_lev_distance = levenshtein_distance(label, predicted)
+            # bgr_lev_distance = levenshtein_distance(label, predicted_bgr)
+            #
+            # if bgr_lev_distance < orig_lev_distance:
+            #     predicted = predicted_bgr
+            #
+            # distances.append(levenshtein_distance(label, predicted))
+            # report_file_content.append('{},{},{}'.format(distances[-1], label, predicted))
+            # print('\nPredicted: {}\nExpected: {}\nDistance: {}'.format(predicted, label, distances[-1]))
 
         with open(os.path.join(report_path, 'report.csv'), 'w') as f:
             f.write(''.join(report_file_content))
@@ -75,9 +78,20 @@ class Tester(object):
 
     def __get_letters_from_video_path(self, video_path):
         video = self.load_video(video_path)
+        label = os.path.basename(video_path[:-4])
         predicted = ''
-        for chunk in video:
+        for i, chunk in enumerate(video):
             evaluation = eval_transformer_pipeline(np.array([chunk]), self.transformers)
+            if 0 < self.transformer_index_to_save_output < len(self.transformers):
+                outputs = self.transformers[self.transformer_index_to_save_output].output
+                folder_label = str(i) + '_' + label
+                folder_output = os.path.join(SAVE_OUTPUT_PATH, folder_label)
+                if not os.path.exists(folder_output):
+                    os.makedirs(folder_output)
+                if outputs is not None:
+                    for output in outputs:
+                        nb = len(os.listdir(folder_output))
+                        cv2.imwrite(os.path.join(folder_output, str(nb) + '.png'), output)
             if evaluation is not None:
                 predicted += convert_last_output_to_ascii(evaluation, number_of_predictions=1)[0]
         del video
@@ -89,6 +103,7 @@ class Tester(object):
         for chunk in video:
             chunk = cv2.cvtColor(chunk, cv2.COLOR_BGR2RGB)
             evaluation = eval_transformer_pipeline(np.array([chunk]), self.transformers)
+
             if evaluation is not None:
                 predicted += convert_last_output_to_ascii(evaluation, number_of_predictions=1)[0]
         del video
@@ -132,6 +147,6 @@ class FrameExtractor(object):
 
 
 if __name__ == '__main__':
-    # Tester().test()
-    FrameExtractor().extract()
+    Tester(4).test()
+    # FrameExtractor().extract()
     # print(levenshtein_distance('cos', 'cod'))
