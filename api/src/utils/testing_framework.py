@@ -95,6 +95,43 @@ class Tester(object):
         return predicted
 
 
+class FrameExtractor(object):
+    def __init__(self):
+        pass
+
+    def load_data(self, label_path):
+        with open(label_path) as f:
+            label_dict = json.load(f)
+        labels = []
+        video_paths = []
+        for data in label_dict['data']:
+            labels.append(data['label'])
+            video_paths.append(data['filename'])
+        return video_paths, labels
+
+    def load_video(self, video_path):
+        print(video_path)
+        capture = skvideo.io.vread(os.path.abspath(video_path))
+        for frame in capture:
+            frame = frame.astype(np.float32)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            yield np.array(frame)
+
+    def extract(self):
+        print('Extracting')
+        video_file_paths, labels = self.load_data(os.path.join(TESTING_VIDEO_FOLDER, 'labels.txt'))
+        for i, (file_name, label) in enumerate(tqdm.tqdm(zip(video_file_paths, labels))):
+            video_frames = self.load_video(os.path.join(TESTING_VIDEO_FOLDER, file_name))
+            video_name_without_ext = file_name[:-4]
+            frame_folder = os.path.join(FRAME_SAVE_PATH, video_name_without_ext + ' - ' + label)
+            if not os.path.exists(frame_folder):
+                os.makedirs(frame_folder)
+            for i, frame in enumerate(video_frames):
+                if i % 4 == 0:
+                    cv2.imwrite(os.path.join(frame_folder, str(i) + '.jpg'), frame)
+
+
 if __name__ == '__main__':
-    Tester().test()
+    # Tester().test()
+    FrameExtractor().extract()
     # print(levenshtein_distance('cos', 'cod'))
