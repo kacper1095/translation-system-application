@@ -157,6 +157,6 @@ class FrameExtractor(object):
 
 
 if __name__ == '__main__':
-    Tester(4).test()
+    Tester().test()
     # FrameExtractor().extract()
     # print(levenshtein_distance('cos', 'cod'))

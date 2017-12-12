@@ -367,8 +367,8 @@ background: -webkit-radial-gradient(circle, rgb(20, 20, 20), rgb(21, 21, 21));
 #predicted{
   text-align: center;
   color: white;
-  font-size: x-large;
-  transform: translate(0, 20%);
+  font-size: large;
+  transform: translate(0, 10%);
 }
 
 #translation {
