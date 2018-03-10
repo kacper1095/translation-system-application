@@ -1,6 +1,10 @@
 import os
 
+os.environ['KERAS_BACKEND'] = 'theano'
 os.environ['THEANO_FLAGS'] = 'floatX=float32,mode=FAST_RUN'
+
+import keras
+keras.backend.set_image_dim_ordering('th')
 
 from flask import Flask
 from flask_restful import Resource, Api, request
